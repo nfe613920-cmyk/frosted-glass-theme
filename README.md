@@ -121,3 +121,9 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 自定义 Dolphin 安装在用户目录 `~/.local/opt/dolphin-glass`，主程序和私有库一起保存。应用菜单及 Dock 的 Dolphin 启动入口调用 `~/.local/bin/dolphin-glass`。已有窗口保留原有内容区外观；新开窗口使用毛玻璃版本。注销再登录后，文件管理器的 DBus 激活也使用该版本。直接执行 `/usr/bin/dolphin` 仍调用发行版程序。
 
 升级 Dolphin 或 KDE/Qt 后重新构建并安装；版本不兼容时先迁移补丁。这里的编译产物不上传 Git，重装后在对应系统上重新构建。安装器的同一个备份也覆盖 Dolphin 的程序、启动入口和 DBus 服务配置，可用 `--restore` 恢复。
+
+## 快捷键入口
+
+安装器同时写入 `~/.local/share/applications/` 和 `~/.local/share/kglobalaccel/` 的启动项，确保 `Ctrl+Alt+T` 与 `Meta+E` 使用相同的毛玻璃启动命令。只覆盖应用菜单会漏掉 KDE 的全局快捷键入口。
+
+当前 KDE 会话会缓存已经注册的启动命令，因此安装后注销再登录，让快捷键加载新入口。用户目录中的覆盖项会保留到下一次登录，也包含在安装器的回滚备份中。

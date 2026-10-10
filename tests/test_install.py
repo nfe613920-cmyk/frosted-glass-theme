@@ -36,12 +36,16 @@ class InstallationTests(unittest.TestCase):
             self.assertIn(str(home / '.local/bin/konsole-glass'), desktop)
             self.assertNotIn(str(Path.home()), desktop)
             self.assertTrue((home / '.local/share/konsole/PanelGlass.profile').exists())
+            shortcut = home / '.local/share/kglobalaccel/org.kde.konsole.desktop'
+            self.assertEqual(shortcut.read_text(), desktop)
+            self.assertIn('X-KDE-Shortcuts=Ctrl+Alt+T', shortcut.read_text())
             backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
             self.assertIn(str(backup), result.stdout)
             subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
             self.assertEqual((config / 'kwinrc').read_text(), old)
             self.assertEqual((old_theme / 'original.txt').read_text(), 'previous theme')
             self.assertFalse((home / '.local/share/konsole/PanelGlass.profile').exists())
+            self.assertFalse(shortcut.exists())
 
     def test_dolphin_bundle_install_and_restore(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -59,6 +63,9 @@ class InstallationTests(unittest.TestCase):
             cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
             subprocess.run(cmd + ['--apply', '--decoration', str(plugin), '--dolphin-bundle', str(bundle)], capture_output=True, check=True)
             self.assertIn(str(home / '.local/bin/dolphin-glass'), desktop.read_text())
+            shortcut = home / '.local/share/kglobalaccel/org.kde.dolphin.desktop'
+            self.assertEqual(shortcut.read_text(), desktop.read_text())
+            self.assertIn('X-KDE-Shortcuts=Meta+E', shortcut.read_text())
             service = home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service'
             self.assertIn('--daemon', service.read_text())
             self.assertTrue((home / '.local/opt/dolphin-glass/bin/dolphin').is_file())
@@ -66,6 +73,7 @@ class InstallationTests(unittest.TestCase):
             subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
             self.assertEqual(desktop.read_text(), 'previous launcher')
             self.assertFalse(service.exists())
+            self.assertFalse(shortcut.exists())
             self.assertFalse((home / '.local/opt/dolphin-glass').exists())
 
     def test_dolphin_rejects_missing_decoration_without_writes(self):

@@ -98,6 +98,7 @@ def install_dolphin(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/dolphin-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.dolphin.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Dolphin\nIcon=system-file-manager\nExec=dolphin %u\n'
+    text = set_key(text, ['Desktop Entry'], 'X-KDE-Shortcuts', 'Meta+E')
     escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
     lines = []
     for line in text.splitlines():
@@ -111,6 +112,7 @@ def install_dolphin(home, bundle, copy, write):
             line = 'DBusActivatable=false'
         lines.append(line)
     write(home / '.local/share/applications/org.kde.dolphin.desktop', '\n'.join(lines) + '\n')
+    write(home / '.local/share/kglobalaccel/org.kde.dolphin.desktop', '\n'.join(lines) + '\n')
     service = '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec="' + escaped + '" --daemon\n'
     write(home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service', service)
 
@@ -209,6 +211,7 @@ def main():
         write(launcher, source, 0o755)
         desktop = Path('/usr/share/applications/org.kde.konsole.desktop')
         text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Konsole\nIcon=utilities-terminal\nExec=konsole\n'
+        text = set_key(text, ['Desktop Entry'], 'X-KDE-Shortcuts', 'Ctrl+Alt+T')
         lines = []
         for line in text.splitlines():
             if line.startswith('TryExec='):
@@ -219,6 +222,7 @@ def main():
                 line = 'Exec="' + escaped + '"' + suffix
             lines.append(line)
         write(home / '.local/share/applications/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
+        write(home / '.local/share/kglobalaccel/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
         if args.dolphin_bundle:
             install_dolphin(home, args.dolphin_bundle, copy, write)
         if args.panels:
