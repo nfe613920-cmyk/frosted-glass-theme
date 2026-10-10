@@ -1,0 +1,2 @@
+QMainWindow { background: transparent; border: none; }
+QToolBar { background: rgba(27,43,55,145); border: none; spacing: 3px; }

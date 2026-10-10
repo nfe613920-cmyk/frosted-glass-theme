@@ -1,0 +1,16 @@
+This repository contains components under multiple licenses:
+
+* Original installation/build/layout scripts and Dock separator: MIT.
+  Copyright (c) 2026 nfe613920-cmyk.
+  See LICENSES/MIT.txt.
+* Plasma style assets are derived from KDE's default Plasma style, whose
+  metadata declares LGPL. Original KDE attribution and metadata are retained.
+  See LICENSES/LGPL-2.1-or-later.txt and docs/upstream.md.
+* The Breeze decoration patch modifies KDE Breeze source files. The original
+  source licensing and copyright notices continue to apply to the modified
+  files: GPL-2.0-or-later (decoration sources), and the applicable upstream
+  licenses for build files. See LICENSES/GPL-2.0-or-later.txt.
+* Konsole color entries are based on KDE Konsole's Breeze colorscheme.
+
+No license is asserted for third-party software linked from the documentation.
+Each component's upstream license takes precedence over this overview.

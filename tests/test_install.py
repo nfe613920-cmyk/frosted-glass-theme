@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: MIT
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / 'scripts/install.py'
+spec = importlib.util.spec_from_file_location('theme_install', SCRIPT)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+
+class InstallationTests(unittest.TestCase):
+    def test_install_restore_and_preserve_unrelated_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'another user'
+            config = home / '.config'
+            config.mkdir(parents=True)
+            old = '# preserve this comment\n[Plugins]\nblurEnabled=false\notherEffect=true\n\n[Desktops]\nNumber=3\n'
+            (config / 'kwinrc').write_text(old)
+            old_theme = home / '.local/share/plasma/desktoptheme/codex-frosted-glass'
+            old_theme.mkdir(parents=True)
+            (old_theme / 'original.txt').write_text('previous theme')
+            cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
+            result = subprocess.run(cmd + ['--apply'], capture_output=True, text=True, check=True)
+            current = (config / 'kwinrc').read_text()
+            self.assertIn('otherEffect=true', current)
+            self.assertIn('Number=3', current)
+            self.assertIn('# preserve this comment', current)
+            self.assertIn('blurEnabled=true', current)
+            desktop = (home / '.local/share/applications/org.kde.konsole.desktop').read_text()
+            self.assertIn(str(home / '.local/bin/konsole-glass'), desktop)
+            self.assertNotIn(str(Path.home()), desktop)
+            self.assertTrue((home / '.local/share/konsole/PanelGlass.profile').exists())
+            backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
+            self.assertIn(str(backup), result.stdout)
+            subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
+            self.assertEqual((config / 'kwinrc').read_text(), old)
+            self.assertEqual((old_theme / 'original.txt').read_text(), 'previous theme')
+            self.assertFalse((home / '.local/share/konsole/PanelGlass.profile').exists())
+
+    def test_dry_run_has_no_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'empty home'
+            subprocess.run([sys.executable, str(SCRIPT), '--home', str(home), '--no-live', '--dry-run'], capture_output=True, check=True)
+            self.assertFalse(home.exists())
+
+    def test_invalid_plugin_rejected_before_install(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'empty'
+            result = subprocess.run([sys.executable, str(SCRIPT), '--home', str(home), '--no-live', '--apply', '--decoration', '/missing/plugin.so'], capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(home.exists())
+
+    def test_backup_restores_symlink_without_touching_referent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            original = home / 'original'
+            original.write_text('keep me')
+            link = home / 'target'
+            link.symlink_to(original)
+            backup = module.Backup(home)
+            backup.save(link)
+            link.unlink()
+            link.write_text('replacement')
+            module.restore(home, backup.path)
+            self.assertTrue(link.is_symlink())
+            self.assertEqual(original.read_text(), 'keep me')
+
+    def test_corrupt_backup_cannot_escape_home(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'home'
+            backup = Path(tmp) / 'backup'
+            backup.mkdir()
+            (backup / 'manifest.json').write_text(json.dumps({'entries': [{'path': '../outside', 'kind': 'absent'}]}))
+            with self.assertRaises(ValueError):
+                module.restore(home, backup)
+
+
+if __name__ == '__main__':
+    unittest.main()

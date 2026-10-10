@@ -1,0 +1,16 @@
+{
+  "name": "Frosted Glass Theme",
+  "snapshot_date": "2026-10-10",
+  "base_color": "#1b2b37",
+  "opacity": 0.5686274509803921,
+  "corner_radius": 14,
+  "blur_strength": 15,
+  "tested": {
+    "plasma": "6.7.5",
+    "breeze": "6.7.5",
+    "qt": "6.12.0",
+    "konsole": "26.08.2"
+  },
+  "breeze_source_commit": "ca217f12ce16a28e601c78b7f2fdceca586725b2",
+  "netfloat_repository": "https://github.com/nfe613920-cmyk/netfloat"
+}
