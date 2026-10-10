@@ -10,6 +10,8 @@ This repository contains components under multiple licenses:
   source licensing and copyright notices continue to apply to the modified
   files: GPL-2.0-or-later (decoration sources), and the applicable upstream
   licenses for build files. See LICENSES/GPL-2.0-or-later.txt.
+* The Dolphin source patch remains under GPL-2.0-or-later, retaining KDE
+  source attribution. See LICENSES/GPL-2.0-or-later.txt.
 * Konsole color entries are based on KDE Konsole's Breeze colorscheme.
 
 No license is asserted for third-party software linked from the documentation.

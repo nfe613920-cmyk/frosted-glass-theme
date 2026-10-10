@@ -2,7 +2,7 @@
 
 保存 2026-10-10 的 KDE Plasma 毛玻璃桌面效果，重装系统后可按新用户名恢复。
 
-包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
+包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
 
 ## 主题参数
 
@@ -21,7 +21,7 @@
 
 仓库默认为私有；重装后先配置自己的 GitHub 认证，再克隆仓库。
 
-已在 Arch Linux、Plasma/Breeze 6.7.5、Qt 6.12.0、Konsole 26.08.2 上构建和使用。其他发行版需安装对应的 KDE/Qt 开发包。
+已在 Arch Linux、Plasma/Breeze 6.7.5、Qt 6.12.0、Konsole/Dolphin 26.08.2 上构建和使用。其他发行版需安装对应的 KDE/Qt 开发包。
 
 ```sh
 sudo pacman -S --needed git python cmake base-devel extra-cmake-modules qt6-base qt6-svg breeze kdecoration kcolorscheme kconfig kguiaddons ki18n kiconthemes kwindowsystem frameworkintegration kcmutils konsole
@@ -101,3 +101,23 @@ node tests/test-panels.cjs
 ```
 
 参考：[Plasma 桌面脚本 API](https://develop.kde.org/docs/plasma/scripting/api/)、[Plasma 主题元素](https://develop.kde.org/docs/plasma/theme/theme-elements/)、[Breeze 源码](https://github.com/KDE/breeze)。许可证与上游来源见 [LICENSE](LICENSE) 和 [docs/upstream.md](docs/upstream.md)。
+
+## Dolphin 整块毛玻璃（可选）
+
+Dolphin 没有 Konsole 的原生透明背景设置，所以需要额外的源码补丁。这个版本把底色统一绘制在主窗口，侧栏、路径栏、标签栏、文件区、详细视图表头和状态栏保持透明，保留文件操作、窗口按钮、标签页及分栏功能。详细列表保留轻微透明的交替行提示。标题栏复用同一个 Breeze 装饰补丁。效果通过 `DOLPHIN_PANEL_GLASS=1` 启用。
+
+安装当前 Dolphin 和开发依赖后构建：
+
+```sh
+sudo pacman -S --needed dolphin kio kparts kbookmarks solid kcompletion ktextwidgets knotifications kcrash kwidgetsaddons kcodecs kfilemetadata baloo baloo-widgets qt6-multimedia
+python3 scripts/build-dolphin.py
+python3 scripts/build-decoration.py
+python3 scripts/install.py --dry-run --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --dolphin-bundle build/dolphin-bundle-26.08.2
+python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --dolphin-bundle build/dolphin-bundle-26.08.2
+```
+
+以构建脚本实际打印的路径为准。默认恢复不重建面板；需要恢复面板布局时另加 `--panels`。
+
+自定义 Dolphin 安装在用户目录 `~/.local/opt/dolphin-glass`，主程序和私有库一起保存。应用菜单及 Dock 的 Dolphin 启动入口调用 `~/.local/bin/dolphin-glass`。已有窗口保留原有内容区外观；新开窗口使用毛玻璃版本。注销再登录后，文件管理器的 DBus 激活也使用该版本。直接执行 `/usr/bin/dolphin` 仍调用发行版程序。
+
+升级 Dolphin 或 KDE/Qt 后重新构建并安装；版本不兼容时先迁移补丁。这里的编译产物不上传 Git，重装后在对应系统上重新构建。安装器的同一个备份也覆盖 Dolphin 的程序、启动入口和 DBus 服务配置，可用 `--restore` 恢复。

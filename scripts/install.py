@@ -92,6 +92,29 @@ def reload_kwin():
     subprocess.run(['qdbus6', 'org.kde.KWin', '/KWin', 'org.kde.KWin.reconfigure'], check=True)
 
 
+def install_dolphin(home, bundle, copy, write):
+    copy(bundle, home / '.local/opt/dolphin-glass')
+    launcher = home / '.local/bin/dolphin-glass'
+    write(launcher, (ROOT / 'scripts/dolphin-glass.py').read_text(), 0o755)
+    desktop = Path('/usr/share/applications/org.kde.dolphin.desktop')
+    text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Dolphin\nIcon=system-file-manager\nExec=dolphin %u\n'
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    lines = []
+    for line in text.splitlines():
+        if line.startswith('Exec='):
+            # Preserve actions and URL placeholders from the system desktop file.
+            command = line[5:].split(maxsplit=1)
+            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+        if line.startswith('TryExec='):
+            line = 'TryExec=dolphin'
+        if line.startswith('DBusActivatable='):
+            line = 'DBusActivatable=false'
+        lines.append(line)
+    write(home / '.local/share/applications/org.kde.dolphin.desktop', '\n'.join(lines) + '\n')
+    service = '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec="' + escaped + '" --daemon\n'
+    write(home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service', service)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
@@ -101,6 +124,7 @@ def main():
     parser.add_argument('--home', type=Path, default=Path.home(), help='Target home directory (also usable for isolated tests)')
     parser.add_argument('--no-live', action='store_true', help='Skip desktop DBus calls')
     parser.add_argument('--decoration', type=Path, help='Built Breeze decoration plugin .so')
+    parser.add_argument('--dolphin-bundle', type=Path, help='Optional bundle made by build-dolphin.py; requires the matching decoration')
     parser.add_argument('--panels', action='store_true', help='Replace all existing panels with the saved top panel and bottom dock')
     args = parser.parse_args()
     home = args.home.expanduser().resolve()
@@ -115,6 +139,11 @@ def main():
         parser.error('--panels needs a live Plasma session; omit --no-live and use your current home')
     if args.decoration and not args.decoration.is_file():
         parser.error('Decoration plugin does not exist; build it first')
+    if args.dolphin_bundle:
+        if not args.decoration:
+            parser.error('--dolphin-bundle requires --decoration for matching titlebar and corners')
+        if not all((args.dolphin_bundle / name).is_file() for name in ['bin/dolphin', 'lib/libdolphinprivate.so.6', 'lib/libdolphinvcs.so.6']):
+            parser.error('Dolphin bundle is incomplete; build it first')
     if args.panels and not args.dry_run:
         subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell'], check=True, stdout=subprocess.DEVNULL)
     plan = [('Install Plasma style and Dock separator', '.local/share/plasma'),
@@ -124,6 +153,8 @@ def main():
             ('Configure Konsole launcher for a continuous glass toolbar', '.local/share/applications/org.kde.konsole.desktop')]
     if args.decoration:
         plan.append(('Install and select matching native Konsole glass decoration', '.local/lib/qt6/plugins/org.kde.kdecoration3'))
+    if args.dolphin_bundle:
+        plan.append(('Install opt-in Dolphin glass build and launcher', '.local/opt/dolphin-glass'))
     if args.panels:
         plan.append(('Replace existing panels with saved layout', '.config/plasma-org.kde.plasma.desktop-appletsrc'))
     for message, path in plan:
@@ -188,6 +219,8 @@ def main():
                 line = 'Exec="' + escaped + '"' + suffix
             lines.append(line)
         write(home / '.local/share/applications/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
+        if args.dolphin_bundle:
+            install_dolphin(home, args.dolphin_bundle, copy, write)
         if args.panels:
             for name in ['plasma-org.kde.plasma.desktop-appletsrc', 'plasmashellrc']:
                 backup.save(home / '.config' / name)

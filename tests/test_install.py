@@ -43,6 +43,38 @@ class InstallationTests(unittest.TestCase):
             self.assertEqual((old_theme / 'original.txt').read_text(), 'previous theme')
             self.assertFalse((home / '.local/share/konsole/PanelGlass.profile').exists())
 
+    def test_dolphin_bundle_install_and_restore(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'new user'
+            bundle = Path(tmp) / 'bundle'
+            for name in ['bin/dolphin', 'lib/libdolphinprivate.so.6', 'lib/libdolphinvcs.so.6']:
+                target = bundle / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
+            desktop = home / '.local/share/applications/org.kde.dolphin.desktop'
+            desktop.parent.mkdir(parents=True)
+            desktop.write_text('previous launcher')
+            cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
+            subprocess.run(cmd + ['--apply', '--decoration', str(plugin), '--dolphin-bundle', str(bundle)], capture_output=True, check=True)
+            self.assertIn(str(home / '.local/bin/dolphin-glass'), desktop.read_text())
+            service = home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service'
+            self.assertIn('--daemon', service.read_text())
+            self.assertTrue((home / '.local/opt/dolphin-glass/bin/dolphin').is_file())
+            backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
+            subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
+            self.assertEqual(desktop.read_text(), 'previous launcher')
+            self.assertFalse(service.exists())
+            self.assertFalse((home / '.local/opt/dolphin-glass').exists())
+
+    def test_dolphin_rejects_missing_decoration_without_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'empty'
+            result = subprocess.run([sys.executable, str(SCRIPT), '--home', str(home), '--no-live', '--apply', '--dolphin-bundle', tmp], capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(home.exists())
+
     def test_dry_run_has_no_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'empty home'

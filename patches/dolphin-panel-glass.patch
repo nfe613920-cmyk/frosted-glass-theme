@@ -1,0 +1,182 @@
+diff --git a/src/dolphinmainwindow.cpp b/src/dolphinmainwindow.cpp
+index a29fe0d..ea71d01 100644
+--- a/src/dolphinmainwindow.cpp
++++ b/src/dolphinmainwindow.cpp
+@@ -72,6 +72,8 @@
+ #include <KUrlComboBox>
+ #include <KUrlNavigator>
+ #include <KWindowSystem>
++#include <KWindowEffects>
++#include <QPainter>
+ #include <KXMLGUIFactory>
+ 
+ #include <kwidgetsaddons_version.h>
+@@ -138,6 +140,27 @@ DolphinMainWindow::DolphinMainWindow()
+ {
+     Q_INIT_RESOURCE(dolphin);
+ 
++    if (qEnvironmentVariableIsSet("DOLPHIN_PANEL_GLASS")) {
++        setProperty("panelGlass", true);
++        setAttribute(Qt::WA_TranslucentBackground);
++        QPalette glassPalette = palette();
++        for (auto group : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
++            glassPalette.setColor(group, QPalette::Window, Qt::transparent);
++            glassPalette.setColor(group, QPalette::Base, Qt::transparent);
++            glassPalette.setColor(group, QPalette::AlternateBase, QColor(255, 255, 255, 10));
++            glassPalette.setColor(group, QPalette::WindowText, QColor(252, 252, 252));
++            glassPalette.setColor(group, QPalette::Text, QColor(252, 252, 252));
++            glassPalette.setColor(group, QPalette::ButtonText, QColor(252, 252, 252));
++        }
++        setPalette(glassPalette);
++        setStyleSheet(QStringLiteral(
++            "DolphinMainWindow, QToolBar, QMenuBar, QStatusBar, QDockWidget, "
++            "QAbstractScrollArea, QTabWidget::pane, KUrlNavigator { background: transparent; border: none; }"
++            "QTabBar::tab { background: transparent; border: none; padding: 6px 10px; }"
++            "QTabBar::tab:selected { background: rgba(61,174,233,35); border-bottom: 2px solid #3daee9; }"
++            "QMainWindow::separator { background: transparent; width: 4px; height: 4px; }"));
++    }
++
+     new MainWindowAdaptor(this);
+ 
+ #ifndef Q_OS_WIN
+@@ -611,8 +634,20 @@ bool DolphinMainWindow::event(QEvent *event)
+     return KXmlGuiWindow::event(event);
+ }
+ 
++void DolphinMainWindow::paintEvent(QPaintEvent *event)
++{
++    if (property("panelGlass").toBool()) {
++        QPainter painter(this);
++        painter.fillRect(event->rect(), QColor(27, 43, 55, 145));
++    }
++    KXmlGuiWindow::paintEvent(event);
++}
++
+ void DolphinMainWindow::showEvent(QShowEvent *event)
+ {
++    if (property("panelGlass").toBool()) {
++        KWindowEffects::enableBlurBehind(windowHandle(), true);
++    }
+     KXmlGuiWindow::showEvent(event);
+ 
+     if (!event->spontaneous() && m_activeViewContainer) {
+@@ -2935,7 +2970,7 @@ void DolphinMainWindow::updateAllowedToolbarAreas()
+ void DolphinMainWindow::updateNavigatorsBackground()
+ {
+     auto navigators = static_cast<DolphinNavigatorsWidgetAction *>(actionCollection()->action(QStringLiteral("url_navigators")));
+-    navigators->setBackgroundEnabled(navigators->isInToolbar());
++    navigators->setBackgroundEnabled(!property("panelGlass").toBool() && navigators->isInToolbar());
+ }
+ 
+ bool DolphinMainWindow::isKompareInstalled() const
+diff --git a/src/dolphinmainwindow.h b/src/dolphinmainwindow.h
+index 50e944f..daf1d94 100644
+--- a/src/dolphinmainwindow.h
++++ b/src/dolphinmainwindow.h
+@@ -268,6 +268,7 @@ Q_SIGNALS:
+     void settingsChanged();
+ 
+ protected:
++    void paintEvent(QPaintEvent *event) override;
+     /** @see QObject::event() */
+     bool event(QEvent *event) override;
+ 
+diff --git a/src/dolphinnavigatorswidgetaction.cpp b/src/dolphinnavigatorswidgetaction.cpp
+index 184530b..df2878f 100644
+--- a/src/dolphinnavigatorswidgetaction.cpp
++++ b/src/dolphinnavigatorswidgetaction.cpp
+@@ -156,6 +156,12 @@ void DolphinNavigatorsWidgetAction::setSecondaryNavigatorVisible(bool visible)
+ 
+ void DolphinNavigatorsWidgetAction::setBackgroundEnabled(bool enabled)
+ {
++    if (m_splitter->window()->property("panelGlass").toBool()) {
++        m_splitter->setAutoFillBackground(false);
++        primaryUrlNavigator()->setBackgroundEnabled(false);
++        if (secondaryUrlNavigator()) secondaryUrlNavigator()->setBackgroundEnabled(false);
++        return;
++    }
+     // Breeze wants a plain rectangle to fill the frame,
+     // but let other QStyles style the navbar how they please
+     const bool isBreezeStyle = m_splitter->style()->name() == QStringLiteral("breeze");
+diff --git a/src/dolphintabwidget.cpp b/src/dolphintabwidget.cpp
+index 7fbf10b..5dca55e 100644
+--- a/src/dolphintabwidget.cpp
++++ b/src/dolphintabwidget.cpp
+@@ -42,6 +42,7 @@ DolphinTabWidget::DolphinTabWidget(DolphinNavigatorsWidgetAction *navigatorsWidg
+ 
+     setTabBar(tabBar);
+     setDocumentMode(true);
++    if (window()->property("panelGlass").toBool()) tabBar->setDrawBase(false);
+     setElideMode(Qt::ElideRight);
+     setUsesScrollButtons(true);
+     setTabBarAutoHide(!GeneralSettings::alwaysShowTabBar());
+diff --git a/src/kitemviews/kitemlistwidget.cpp b/src/kitemviews/kitemlistwidget.cpp
+index e792844..fef73a0 100644
+--- a/src/kitemviews/kitemlistwidget.cpp
++++ b/src/kitemviews/kitemlistwidget.cpp
+@@ -105,7 +105,8 @@ void KItemListWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *o
+     Q_UNUSED(option)
+ 
+     if (m_alternateBackground) {
+-        QColor backgroundColor = m_styleOption.palette.color(QPalette::AlternateBase);
++        QColor backgroundColor = widget && widget->window()->property("panelGlass").toBool()
++            ? QColor(255, 255, 255, 10) : m_styleOption.palette.color(QPalette::AlternateBase);
+         if (!widget->hasFocus()) {
+             QColor baseColor = m_styleOption.palette.color(QPalette::Base);
+             if (baseColor.lightnessF() > 0.5) {
+diff --git a/src/kitemviews/private/kitemlistheaderwidget.cpp b/src/kitemviews/private/kitemlistheaderwidget.cpp
+index f385e66..1599cef 100644
+--- a/src/kitemviews/private/kitemlistheaderwidget.cpp
++++ b/src/kitemviews/private/kitemlistheaderwidget.cpp
+@@ -465,6 +465,12 @@ void KItemListHeaderWidget::paintRole(QPainter *painter, const QByteArray &role,
+     option.orientation = Qt::Horizontal;
+     option.selectedPosition = QStyleOptionHeader::NotAdjacent;
+     option.text = m_model->roleDescription(role);
++    if (widget && widget->window()->property("panelGlass").toBool()) {
++        option.palette = widget->palette();
++        if (option.state & QStyle::State_MouseOver) painter->fillRect(rect, QColor(255, 255, 255, 20));
++        style()->drawControl(QStyle::CE_HeaderLabel, &option, painter, widget);
++        return;
++    }
+ 
+     // First we paint any potential empty (padding) space on left and/or right of this role's column.
+     const auto paintPadding = [&](int section, const QRectF &rect, const QStyleOptionHeader::SectionPosition &pos) {
+diff --git a/src/statusbar/dolphinstatusbar.cpp b/src/statusbar/dolphinstatusbar.cpp
+index 4b2bb6f..631ef50 100644
+--- a/src/statusbar/dolphinstatusbar.cpp
++++ b/src/statusbar/dolphinstatusbar.cpp
+@@ -441,6 +441,7 @@ void DolphinStatusBar::updateContentsMargins()
+ 
+ void DolphinStatusBar::paintEvent(QPaintEvent *paintEvent)
+ {
++    if (window()->property("panelGlass").toBool()) return;
+     Q_UNUSED(paintEvent)
+     QPainter p(this);
+     QStyleOption opt;
+diff --git a/src/views/dolphinview.cpp b/src/views/dolphinview.cpp
+index e663632..5b3045b 100644
+--- a/src/views/dolphinview.cpp
++++ b/src/views/dolphinview.cpp
+@@ -1061,13 +1061,20 @@ void DolphinView::stopLoading()
+ void DolphinView::updatePalette()
+ {
+     QColor color = KColorScheme(isActiveWindow() ? QPalette::Active : QPalette::Inactive, KColorScheme::View).background().color();
+-    if (!m_active) {
++    if (window()->property("panelGlass").toBool()) {
++        color = Qt::transparent;
++    } else if (!m_active) {
+         color.setAlpha(150);
+     }
+ 
+     QWidget *viewport = m_container->viewport();
+     if (viewport) {
+-        QPalette palette;
++        QPalette palette = viewport->palette();
++        if (window()->property("panelGlass").toBool()) {
++            palette.setColor(QPalette::Window, Qt::transparent);
++            palette.setColor(QPalette::Base, Qt::transparent);
++            palette.setColor(QPalette::AlternateBase, QColor(255, 255, 255, 10));
++        }
+         palette.setColor(viewport->backgroundRole(), color);
+         viewport->setPalette(palette);
+     }

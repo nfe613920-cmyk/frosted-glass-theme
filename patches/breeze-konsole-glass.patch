@@ -12,17 +12,17 @@ index 876430a..af07104 100644
  
  target_link_libraries(breezedecoration
 diff --git a/kdecoration/breezedecoration.cpp b/kdecoration/breezedecoration.cpp
-index 48afd7b..36f36ef 100644
+index 48afd7b..8702716 100644
 --- a/kdecoration/breezedecoration.cpp
 +++ b/kdecoration/breezedecoration.cpp
 @@ -180,6 +180,12 @@ QColor Decoration::fontColor() const
  }
  
  //________________________________________________________________
-+bool Decoration::isKonsoleGlass() const
++bool Decoration::isPanelGlass() const
 +{
 +    const auto klass = window()->windowClass().toLower();
-+    return klass.contains(QStringLiteral("konsole"));
++    return klass.contains(QStringLiteral("konsole")) || klass.contains(QStringLiteral("dolphin"));
 +}
 +
  bool Decoration::init()
@@ -32,12 +32,12 @@ index 48afd7b..36f36ef 100644
      connect(this, &KDecoration3::Decoration::bordersChanged, this, &Decoration::updateTitleBar);
      connect(window(), &KDecoration3::DecoratedWindow::adjacentScreenEdgesChanged, this, &Decoration::updateTitleBar);
      connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::updateTitleBar);
-+    if (isKonsoleGlass()) {
++    if (isPanelGlass()) {
 +        connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::recalculateBorders);
 +    }
      connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, &Decoration::updateTitleBar);
 -    connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, &Decoration::setOpaque);
-+    connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, [this](bool maximized) { setOpaque(!isKonsoleGlass() && maximized); });
++    connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, [this](bool maximized) { setOpaque(!isPanelGlass() && maximized); });
  
      connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::updateButtonsGeometry);
      connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, &Decoration::updateButtonsGeometry);
@@ -45,7 +45,7 @@ index 48afd7b..36f36ef 100644
  //________________________________________________________________
  qreal Decoration::borderSize(bool bottom, qreal scale) const
  {
-+    if (isKonsoleGlass()) return 0;
++    if (isPanelGlass()) return 0;
      const qreal pixelSize = KDecoration3::pixelSize(scale);
      const qreal baseSize = std::max<qreal>(pixelSize, KDecoration3::snapToPixelGrid(settings()->smallSpacing(), scale));
      if (m_internalSettings && (m_internalSettings->mask() & BorderSize)) {
@@ -53,7 +53,7 @@ index 48afd7b..36f36ef 100644
  void Decoration::recalculateBorders()
  {
      setBorders(bordersFor(window()->nextScale()));
-+    if (isKonsoleGlass()) {
++    if (isPanelGlass()) {
 +        setBlurRegion(QRegion(QRect(0, 0, qCeil(size().width()), qCeil(borderTop()))));
 +    }
  
@@ -64,7 +64,7 @@ index 48afd7b..36f36ef 100644
      qreal bottomRightRadius = 0;
      if (m_internalSettings->roundedCorners()) {
 -        if (hideTitleBar()) {
-+        if (hideTitleBar() || (isKonsoleGlass() && !isTopEdge())) {
++        if (hideTitleBar() || (isPanelGlass() && !isTopEdge())) {
              topLeftRightRadius = m_scaledCornerRadius;
          }
  
@@ -72,7 +72,7 @@ index 48afd7b..36f36ef 100644
  //________________________________________________________________
  void Decoration::paint(QPainter *painter, const QRectF &repaintRegion)
  {
-+    if (isKonsoleGlass()) {
++    if (isPanelGlass()) {
 +        setOpaque(false);
 +        const auto fullBlur = QRegion(rect().toAlignedRect());
 +        if (blurRegion() != fullBlur) setBlurRegion(fullBlur);
@@ -84,7 +84,7 @@ index 48afd7b..36f36ef 100644
      QRectF rect(QPointF(0, 0), QSizeF(size().width(), borderTop()));
      QBrush frontBrush;
      QBrush backBrush(this->titleBarColor());
-+    if (isKonsoleGlass()) {
++    if (isPanelGlass()) {
 +        backBrush = Qt::transparent;
 +    }
  
@@ -95,7 +95,7 @@ index 48afd7b..36f36ef 100644
  
      // render a linear gradient on title area
 -    if (window()->isActive() && m_internalSettings->drawBackgroundGradient()) {
-+    if (!isKonsoleGlass() && window()->isActive() && m_internalSettings->drawBackgroundGradient()) {
++    if (!isPanelGlass() && window()->isActive() && m_internalSettings->drawBackgroundGradient()) {
          QLinearGradient gradient(0, 0, 0, rect.height());
          gradient.setColorAt(0.0, titleBarColor().lighter(120));
          gradient.setColorAt(0.8, titleBarColor());
@@ -104,7 +104,7 @@ index 48afd7b..36f36ef 100644
  
      } else {
 -        frontBrush = titleBarColor();
-+        frontBrush = isKonsoleGlass() ? QColor(27, 43, 55, 145) : titleBarColor();
++        frontBrush = isPanelGlass() ? QColor(27, 43, 55, 145) : titleBarColor();
  
          painter->setBrush(titleBarColor());
      }
@@ -112,7 +112,7 @@ index 48afd7b..36f36ef 100644
          painter->setClipRect(rect, Qt::IntersectClip);
  
          auto drawThe = [this, painter](const QRectF &r) {
-+            if (isKonsoleGlass()) {
++            if (isPanelGlass()) {
 +                QPainterPath path;
 +                path.addRoundedRect(r.adjusted(0, 0, 0, m_scaledCornerRadius), m_scaledCornerRadius, m_scaledCornerRadius);
 +                painter->drawPath(path);
@@ -125,7 +125,7 @@ index 48afd7b..36f36ef 100644
  void Decoration::updateShadow()
  {
      auto s = settings();
-+    if (isKonsoleGlass()) {
++    if (isPanelGlass()) {
 +        setShadow(nullptr);
 +        return;
 +    }
@@ -137,19 +137,19 @@ index 48afd7b..36f36ef 100644
      // On Wayland, this value has constant factor of 2.
      // Removing it will break radius scaling on X11.
 -    m_scaledCornerRadius = KDecoration3::snapToPixelGrid(Metrics::Frame_FrameRadius * settings()->smallSpacing(), window()->nextScale());
-+    m_scaledCornerRadius = KDecoration3::snapToPixelGrid(isKonsoleGlass() ? 14 : Metrics::Frame_FrameRadius * settings()->smallSpacing(), window()->nextScale());
++    m_scaledCornerRadius = KDecoration3::snapToPixelGrid(isPanelGlass() ? 14 : Metrics::Frame_FrameRadius * settings()->smallSpacing(), window()->nextScale());
  }
  
  void Decoration::updateScale()
 diff --git a/kdecoration/breezedecoration.h b/kdecoration/breezedecoration.h
-index 72694c5..3dc4794 100644
+index 72694c5..778b9f6 100644
 --- a/kdecoration/breezedecoration.h
 +++ b/kdecoration/breezedecoration.h
 @@ -97,6 +97,7 @@ private Q_SLOTS:
      void updateScale();
  
  private:
-+    bool isKonsoleGlass() const;
++    bool isPanelGlass() const;
      //* return the rect in which caption will be drawn
      QPair<QRectF, Qt::Alignment> captionRect() const;
  
@@ -157,7 +157,7 @@ index 72694c5..3dc4794 100644
  
  bool Decoration::hasBorders() const
  {
-+    if (isKonsoleGlass()) return false;
++    if (isPanelGlass()) return false;
      if (m_internalSettings && m_internalSettings->mask() & BorderSize) {
          return m_internalSettings->borderSize() > InternalSettings::BorderNoSides;
      } else {
@@ -165,7 +165,7 @@ index 72694c5..3dc4794 100644
  
  bool Decoration::hasNoBorders() const
  {
-+    if (isKonsoleGlass()) return true;
++    if (isPanelGlass()) return true;
      if (m_internalSettings && m_internalSettings->mask() & BorderSize) {
          return m_internalSettings->borderSize() == InternalSettings::BorderNone;
      } else {
@@ -173,7 +173,7 @@ index 72694c5..3dc4794 100644
  
  bool Decoration::hasNoSideBorders() const
  {
-+    if (isKonsoleGlass()) return true;
++    if (isPanelGlass()) return true;
      if (m_internalSettings && m_internalSettings->mask() & BorderSize) {
          return m_internalSettings->borderSize() == InternalSettings::BorderNoSides;
      } else {
@@ -182,6 +182,6 @@ index 72694c5..3dc4794 100644
  bool Decoration::outlinesEnabled() const
  {
 -    return m_internalSettings->outlineEnabled();
-+    return !isKonsoleGlass() && m_internalSettings->outlineEnabled();
++    return !isPanelGlass() && m_internalSettings->outlineEnabled();
  }
  }
