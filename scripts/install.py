@@ -172,7 +172,7 @@ def main():
             copy(args.decoration, plugin)
             # KWin prefixes its plugin namespace. A relative plugin ID resolves
             # through the existing system Qt plugin directory without root writes.
-            config('kwinrc', ['org.kde.kdecoration2'], 'library', '../../../../../' + str(plugin).lstrip('/'))
+            config('kwinrc', ['org.kde.kdecoration2'], 'library', '../' * 10 + str(plugin).lstrip('/'))
         launcher = home / '.local/bin/konsole-glass'
         source = (ROOT / 'scripts/konsole-glass.py').read_text()
         write(launcher, source, 0o755)
