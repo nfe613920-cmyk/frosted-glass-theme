@@ -212,6 +212,70 @@ def install_spectacle(home, bundle, copy, write):
         write(home / '.local/share/dbus-1/services' / (name + '.service'), service)
 
 
+
+RUNTIME_APPS = {
+    'systemsettings.desktop': 'systemsettings',
+    'kcm_fcitx5.desktop': 'systemsettings',
+    'kcm_qtquicksettings.desktop': 'kcmshell6',
+    'org.fcitx.fcitx5-config-qt.desktop': 'fcitx5-config-qt',
+    'org.fcitx.fcitx5-migrator.desktop': 'fcitx5-migrator',
+    'kbd-layout-viewer5.desktop': 'kbd-layout-viewer5',
+    'linguist.desktop': 'linguist6',
+    'assistant.desktop': 'assistant6',
+    'qdbusviewer.desktop': 'qdbusviewer6',
+    'cmake-gui.desktop': 'cmake-gui',
+    'org.kde.kinfocenter.desktop': 'kinfocenter',
+    'org.kde.vpnimport.desktop': 'systemsettings',
+    'org.kde.discover.desktop': 'plasma-discover',
+    'org.kde.discover.flatpak.desktop': 'plasma-discover',
+    'org.kde.discover.snap.desktop': 'plasma-discover',
+    'org.kde.discover.urlhandler.desktop': 'plasma-discover',
+    'org.kde.plasma-systemmonitor.desktop': 'plasma-systemmonitor',
+    'org.kde.plasma-welcome.desktop': 'plasma-welcome',
+    'org.kde.plasma.emojier.desktop': 'plasma-emojier',
+    'org.kde.kcolorschemeeditor.desktop': 'kcolorschemeeditor',
+    'org.kde.keditfiletype.desktop': 'keditfiletype',
+    'org.kde.kfontinst.desktop': 'kfontinst',
+    'org.kde.kfontview.desktop': 'kfontview',
+    'org.kde.kmenuedit.desktop': 'kmenuedit',
+    'org.kde.knetattach.desktop': 'knetattach',
+    'org.kde.knewstuff-dialog6.desktop': 'knewstuff-dialog6',
+    'org.kde.ConfigurePrinter.desktop': 'configure-printer',
+    'org.kde.bluedevilsendfile.desktop': 'bluedevil-sendfile',
+    'org.kde.bluedevilwizard.desktop': 'bluedevil-wizard',
+    'org.kde.plasma.printqueue.desktop': 'plasma-print-queue',
+}
+
+
+def install_runtime(home, bundle, copy, write, applications=Path('/usr/share/applications'), binaries=Path('/usr/bin')):
+    copy(bundle, home / '.local/opt/panelglass-runtime')
+    source = (ROOT / 'scripts/panelglass-app.py').read_text()
+    installed = []
+    for name, app in RUNTIME_APPS.items():
+        desktop = applications / name
+        if not desktop.is_file() or not (binaries / app).is_file():
+            continue
+        launcher = home / '.local/bin' / (app + '-glass')
+        write(launcher, source, 0o755)
+        # Quote desktop Exec arguments using the freedesktop escaping rules.
+        escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+        lines = []
+        for line in desktop.read_text().splitlines():
+            if line.startswith('Exec='):
+                command = line[5:].split(maxsplit=1)
+                line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+            elif line.startswith('DBusActivatable='):
+                line = 'DBusActivatable=false'
+            lines.append(line)
+        text = '\n'.join(lines) + '\n'
+        write(home / '.local/share/applications' / name, text)
+        # Desktop actions and any registered shortcuts use the same launcher.
+        if (home / '.local/share/kglobalaccel' / name).exists() or (Path('/usr/share/kglobalaccel') / name).exists():
+            write(home / '.local/share/kglobalaccel' / name, text)
+        installed.append(name)
+    return installed
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
@@ -225,6 +289,7 @@ def main():
     parser.add_argument('--ark-bundle', type=Path, help='Optional bundle made by build-ark.py; requires the matching decoration')
     parser.add_argument('--spectacle-bundle', type=Path, help='Optional Spectacle glass bundle; requires matching decoration')
     parser.add_argument('--kate-bundle', type=Path, help='Optional bundle made by build-kate.py; requires the matching decoration')
+    parser.add_argument('--runtime-bundle', type=Path, help='Per-application Qt glass runtime made by build-runtime.py')
     parser.add_argument('--panels', action='store_true', help='Replace all existing panels with the saved top panel and bottom dock')
     args = parser.parse_args()
     home = args.home.expanduser().resolve()
@@ -257,6 +322,8 @@ def main():
             parser.error('--kate-bundle requires --decoration for matching titlebar and corners')
         if not (args.kate_bundle / 'bin/kate').is_file() or not (args.kate_bundle / 'lib/libKF6TextEditor.so.6').is_file() or not any(p.is_file() for p in (args.kate_bundle / 'lib').glob('libkateprivate.so.*')):
             parser.error('Kate bundle is incomplete; build it first')
+    if args.runtime_bundle and (not args.decoration or not all((args.runtime_bundle / name).is_file() for name in ['plugins/generic/libpanelglass.so', 'PanelGlassTransparent.colors'])):
+        parser.error('Runtime requires a complete bundle and matching decoration')
     if args.panels and not args.dry_run:
         subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell'], check=True, stdout=subprocess.DEVNULL)
     plan = [('Install Plasma style and Dock separator', '.local/share/plasma'),
@@ -274,6 +341,8 @@ def main():
         plan.append(('Install Spectacle glass build, desktop and DBus launchers', '.local/opt/spectacle-glass'))
     if args.kate_bundle:
         plan.append(('Install opt-in Kate glass build, editor theme and launcher', '.local/opt/kate-glass'))
+    if args.runtime_bundle:
+        plan.append(('Install per-application KDE glass runtime and launchers', '.local/opt/panelglass-runtime'))
     if args.panels:
         plan.append(('Replace existing panels with saved layout', '.config/plasma-org.kde.plasma.desktop-appletsrc'))
     for message, path in plan:
@@ -351,6 +420,8 @@ def main():
             install_kate(home, args.kate_bundle, copy, write)
             if (args.kate_bundle / 'bin/kwrite').is_file():
                 install_kwrite(home, args.kate_bundle, copy, write)
+        if args.runtime_bundle:
+            install_runtime(home, args.runtime_bundle, copy, write)
         if args.panels:
             for name in ['plasma-org.kde.plasma.desktop-appletsrc', 'plasmashellrc']:
                 backup.save(home / '.config' / name)

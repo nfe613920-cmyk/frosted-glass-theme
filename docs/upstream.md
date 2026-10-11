@@ -6,7 +6,7 @@ Konsole ANSI 配色源自 [KDE Konsole](https://github.com/KDE/konsole)，背景
 
 窗口装饰补丁基于 [Breeze v6.7.5](https://github.com/KDE/breeze/tree/v6.7.5)，基准提交 `ca217f12ce16a28e601c78b7f2fdceca586725b2`。上游文件的版权头和许可证保持不变。
 
-Konsole、Dolphin、Ark 和 Kate 特殊分支完成以下处理：
+本仓库适配应用的特殊分支完成以下处理：
 
 1. 原生标题栏底色只绘制一次，避免半透明底色叠加。
 2. 标题栏使用与终端、工具栏相同的底色与透明度。
@@ -15,7 +15,7 @@ Konsole、Dolphin、Ark 和 Kate 特殊分支完成以下处理：
 5. 统一顶部和底部 14 px 圆角，让 KWin 的模糊输出也按圆角裁剪，消除圆角外的直角背景。
 6. 原生窗口按钮、移动、缩放、最大化逻辑继续使用 Breeze。
 
-补丁针对当前窗口类名识别 Konsole、Dolphin、Ark 和 Kate。插件作为同版本 Breeze 的替代装饰加载，其他窗口不进入上述特殊分支。它不修改 Plasma 面板代码。
+补丁针对当前窗口类名识别本仓库适配的应用，名单包含在 `Decoration::isPanelGlass()` 中。插件作为同版本 Breeze 的替代装饰加载，其他窗口不进入上述特殊分支。它不修改 Plasma 面板代码。
 
 构建器会匹配已安装的 Breeze 版本。若较新版本无法通过 `git apply --check` 或 CMake 构建，先迁移补丁；构建失败时不会安装旧 ABI 的二进制或更改桌面。
 
@@ -30,3 +30,5 @@ Kate 补丁基于 [Kate v26.08.2](https://github.com/KDE/kate/tree/v26.08.2)，�
 KWrite 使用同一 Kate v26.08.2 源码树及主窗口库，无新增上游来源。窗口装饰额外精确匹配 `kwrite` / `org.kde.kwrite`。
 
 Spectacle 基于 [v6.7.5](https://github.com/KDE/spectacle/tree/v6.7.5)，基准提交 `343a0229b4cbb7961ae915629eaa687f8ef81eaa`，保留修改文件的 LGPL-2.0-or-later 及原作者声明。新增数值输入组件为 MIT。构建使用 [Plasma Wayland Protocols v1.20.0](https://github.com/KDE/plasma-wayland-protocols/tree/v1.20.0)，只作为缓存内的构建依赖；Qt Quick 界面与 Qt Widgets 设置窗口分别绘制一次相同玻璃底色。
+
+Qt 应用运行时为原创 MIT 代码，使用 [Qt GenericPlugin](https://doc.qt.io/qt-6/qgenericplugin.html)、Qt Widgets/Quick/QML 及 [Kirigami PlatformTheme](https://api.kde.org/kirigami/html/classKirigami_1_1Platform_1_1PlatformTheme.html) 的公开 API。卡片状态处理参考本机 Kirigami 6.30.0 `DefaultCardBackground.qml` 的属性接口；没有复制或改写安装在系统目录的上游 QML 文件。透明配色派生自仓库现有 Konsole Panel Glass 配色。

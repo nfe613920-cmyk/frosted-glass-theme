@@ -15,7 +15,15 @@
     "kate": "26.08.2",
     "ktexteditor": "6.30.0",
     "kwrite": "26.08.2",
-    "spectacle": "6.7.5"
+    "spectacle": "6.7.5",
+    "systemsettings": "6.7.5",
+    "kinfocenter": "6.7.5",
+    "discover": "6.7.5",
+    "plasma-systemmonitor": "6.7.5",
+    "kirigami": "6.30.0",
+    "fcitx5-configtool": "5.1.16",
+    "qt6-tools": "6.12.0",
+    "cmake-gui": "4.4.4"
   },
   "breeze_source_commit": "ca217f12ce16a28e601c78b7f2fdceca586725b2",
   "netfloat_repository": "https://github.com/nfe613920-cmyk/netfloat",
@@ -25,5 +33,6 @@
   "ark_source_commit": "b65302c2ee5aefd4042f1a09b1b280c2aa3d0c88",
   "kate_source_commit": "2b6465a886b9d3bfc6eab25065c14ffe025e6ac3",
   "ktexteditor_source_commit": "fe956fbc80eb125cda947972b7ad46c101d3456b",
-  "spectacle_source_commit": "343a0229b4cbb7961ae915629eaa687f8ef81eaa"
+  "spectacle_source_commit": "343a0229b4cbb7961ae915629eaa687f8ef81eaa",
+  "runtime": "per-application Qt GenericPlugin with executable-bound host isolation"
 }

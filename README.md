@@ -2,7 +2,7 @@
 
 保存 2026-10-10 的 KDE Plasma 毛玻璃桌面效果，重装系统后可按新用户名恢复。
 
-包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark、Kate、KWrite、Spectacle 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
+包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark、Kate、KWrite、Spectacle 的整块毛玻璃窗口，并支持其他 KDE / Qt 6 工具的应用级适配。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
 
 ## 主题参数
 
@@ -75,7 +75,7 @@ python3 scripts/install.py --restore ~/.local/state/frosted-glass-theme/backups/
 ~/.local/bin/konsole-glass --separate
 ```
 
-关闭、最大化、最小化按钮依然由原生 Breeze 装饰提供。装饰补丁针对 Konsole、Dolphin 和 Ark 的窗口类名改变绘制，其他应用沿用同版本 Breeze 的原行为。升级 Breeze、KWin 或 Qt 后，请重新构建并安装匹配当前系统的插件。
+关闭、最大化、最小化按钮依然由原生 Breeze 装饰提供。装饰补丁针对本仓库适配应用的窗口类名改变绘制，名单以补丁源码和下方应用说明为准，其他应用沿用同版本 Breeze 的原行为。升级 Breeze、KWin 或 Qt 后，请重新构建并安装匹配当前系统的插件。
 
 ## NetFloat
 
@@ -189,3 +189,34 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 已验证后台截图导出、打开现有图片进入标注模式、标注界面显示、设置页、数值输入框箭头与键盘编辑。没有修改截图区域选择覆盖层或视频录制后端。自动检查数值控件可运行 `python3 scripts/check-spectacle-spin.py build/实际补丁源码目录`。
 
 Spectacle 另有隐藏的 `org.kde.spectacle-glass-capture.desktop`，其 Exec 直接指向实际程序并声明截图接口。KWin 根据 `/proc` 中的程序路径查找授权，Python 启动脚本无法代替实际程序。该条目不增加应用菜单图标，卸载恢复时一并删除。
+
+## 其他 KDE / Qt 6 应用
+
+`runtime/` 提供按应用启动的 Qt GenericPlugin。它只在启动器声明的实际主程序中启用；信息中心的 OpenGL/Vulkan 检测程序及其他子进程保持原始行为。没有设置全局 `QT_PLUGIN_PATH`，没有降低文字、图标或整个窗口的透明度，也没有替换系统程序。
+
+支持已安装的系统设置、信息中心、Discover、系统监视器、欢迎中心、表情选择器、菜单编辑器、配色编辑器、文件类型编辑器、字体查看/安装、网络文件夹、KNewStuff、蓝牙和打印工具，以及 Fcitx 配置/迁移、键盘布局查看、CMake GUI、Qt Linguist、Assistant、QDBusViewer 和 Qt Quick 设置 KCM。安装器只为本机存在的应用写入启动入口，保留原始参数、desktop actions 和语言设置。
+
+Qt Widgets 主窗口绘制一次 `#1b2b37` / `145` 背景；工具栏、表头和侧栏去掉实体黑块。Qt Quick 使用相同玻璃底色，Kirigami 卡片保留浅色边框、悬停和按下反馈。系统设置侧栏的 QQuickWidget 使用透明合成顺序，避免被其他窗口遮挡后重绘花屏。窗口装饰仍保留关闭、最大化、最小化和缩放。
+
+安装 Qt/KF 开发依赖后运行：
+
+```sh
+sudo pacman -S --needed qt6-declarative kirigami kcolorscheme kconfig kwindowsystem
+python3 scripts/build-runtime.py
+python3 scripts/build-decoration.py
+python3 scripts/install.py --dry-run --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --runtime-bundle build/runtime-bundle
+python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --runtime-bundle build/runtime-bundle
+```
+
+可与 Dolphin、Ark、Kate、Spectacle 的 bundle 选项合并安装；不传 `--panels` 就不重建面板布局。从应用菜单打开即可使用新入口，终端启动时使用 `~/.local/bin/程序名-glass`，例如 `systemsettings-glass`、`plasma-discover-glass`、`fcitx5-config-qt-glass`。旧进程退出后再打开新窗口。升级 Qt、Kirigami、KWin/Breeze 后重新构建两种插件。
+
+功能检查：
+
+```sh
+python3 -m unittest discover -s tests -v
+python3 scripts/check-runtime.py
+```
+
+已验证原生窗口启动、输入、按钮点击、数值编辑、停靠窗口构造、透明背景重复重绘、异步卡片加载及状态反馈；实际检查了系统设置/信息中心、软件中心、监控图表、欢迎中心、表情、菜单、字体查看、文件类型、网络向导、KNewStuff、Fcitx 配置及 Qt 开发工具界面。字体安装没有执行写入；打印配置无可用打印机，打印队列提示 CUPS 未运行；蓝牙发送提示 OBEX 服务不可用，未执行传输或配对。
+
+本次适配保留配色编辑器的颜色预览、字体样张、文档及监控图表内容。不对 Qt Designer 的设计预览、QV4L2/QVidCap 视频画面或 Electron 自绘界面强制应用这套全局控件规则。

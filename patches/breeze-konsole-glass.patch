@@ -12,10 +12,10 @@ index 876430a..af07104 100644
  
  target_link_libraries(breezedecoration
 diff --git a/kdecoration/breezedecoration.cpp b/kdecoration/breezedecoration.cpp
-index 48afd7b..322922b 100644
+index 48afd7b..56b0814 100644
 --- a/kdecoration/breezedecoration.cpp
 +++ b/kdecoration/breezedecoration.cpp
-@@ -180,6 +180,19 @@ QColor Decoration::fontColor() const
+@@ -180,6 +180,64 @@ QColor Decoration::fontColor() const
  }
  
  //________________________________________________________________
@@ -29,13 +29,58 @@ index 48afd7b..322922b 100644
 +        || klass.contains(QStringLiteral("org.kde.kwrite"))
 +        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("spectacle"))
 +        || klass.contains(QStringLiteral("org.kde.spectacle"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("systemsettings"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("kinfocenter"))
++        || klass.contains(QStringLiteral("org.kde.systemsettings"))
++        || klass.contains(QStringLiteral("org.kde.kinfocenter"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("plasma-discover"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.discover"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("plasma-systemmonitor"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.plasma-systemmonitor"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("plasma-welcome"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.plasma-welcome"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("plasma-emojier"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.plasma.emojier"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("kcolorschemeeditor"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("keditfiletype"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("kfontinst"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("kfontview"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("kmenuedit"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("knetattach"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("knewstuff-dialog6"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("configure-printer"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("bluedevil-sendfile"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("bluedevil-wizard"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("plasma-print-queue"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.kcolorschemeeditor"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.keditfiletype"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.kfontinst"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.kfontview"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.kmenuedit"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.knetattach"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.knewstuff-dialog6"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.configureprinter"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.bluedevilsendfile"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.bluedevilwizard"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("org.kde.plasma.printqueue"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("fcitx5-config-qt"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("fcitx5-migrator"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("kbd-layout-viewer5"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("linguist6"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("linguist"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("assistant6"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("assistant"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("qdbusviewer6"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("qdbusviewer"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("cmake-gui"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("kcmshell6"))
 +        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("ark")) || klass.contains(QStringLiteral("org.kde.ark"));
 +}
 +
  bool Decoration::init()
  {
      // active state change animation
-@@ -242,8 +255,11 @@ bool Decoration::init()
+@@ -242,8 +300,11 @@ bool Decoration::init()
      connect(this, &KDecoration3::Decoration::bordersChanged, this, &Decoration::updateTitleBar);
      connect(window(), &KDecoration3::DecoratedWindow::adjacentScreenEdgesChanged, this, &Decoration::updateTitleBar);
      connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::updateTitleBar);
@@ -48,7 +93,7 @@ index 48afd7b..322922b 100644
  
      connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::updateButtonsGeometry);
      connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, &Decoration::updateButtonsGeometry);
-@@ -298,6 +314,7 @@ void Decoration::updateAnimationState()
+@@ -298,6 +359,7 @@ void Decoration::updateAnimationState()
  //________________________________________________________________
  qreal Decoration::borderSize(bool bottom, qreal scale) const
  {
@@ -56,7 +101,7 @@ index 48afd7b..322922b 100644
      const qreal pixelSize = KDecoration3::pixelSize(scale);
      const qreal baseSize = std::max<qreal>(pixelSize, KDecoration3::snapToPixelGrid(settings()->smallSpacing(), scale));
      if (m_internalSettings && (m_internalSettings->mask() & BorderSize)) {
-@@ -416,6 +433,9 @@ QMarginsF Decoration::bordersFor(qreal scale) const
+@@ -416,6 +478,9 @@ QMarginsF Decoration::bordersFor(qreal scale) const
  void Decoration::recalculateBorders()
  {
      setBorders(bordersFor(window()->nextScale()));
@@ -66,7 +111,7 @@ index 48afd7b..322922b 100644
  
      // extended sizes
      const qreal extSize = KDecoration3::snapToPixelGrid(settings()->largeSpacing(), window()->nextScale());
-@@ -439,7 +459,7 @@ void Decoration::recalculateBorders()
+@@ -439,7 +504,7 @@ void Decoration::recalculateBorders()
      qreal bottomLeftRadius = 0;
      qreal bottomRightRadius = 0;
      if (m_internalSettings->roundedCorners()) {
@@ -75,7 +120,7 @@ index 48afd7b..322922b 100644
              topLeftRightRadius = m_scaledCornerRadius;
          }
  
-@@ -567,6 +587,11 @@ void Decoration::updateButtonsGeometry()
+@@ -567,6 +632,11 @@ void Decoration::updateButtonsGeometry()
  //________________________________________________________________
  void Decoration::paint(QPainter *painter, const QRectF &repaintRegion)
  {
@@ -87,7 +132,7 @@ index 48afd7b..322922b 100644
      // TODO: optimize based on repaintRegion
      auto s = settings();
      // paint background
-@@ -618,6 +643,9 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -618,6 +688,9 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
      QRectF rect(QPointF(0, 0), QSizeF(size().width(), borderTop()));
      QBrush frontBrush;
      QBrush backBrush(this->titleBarColor());
@@ -97,7 +142,7 @@ index 48afd7b..322922b 100644
  
      if (!rect.intersects(repaintRegion)) {
          return;
-@@ -627,7 +655,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -627,7 +700,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
      painter->setPen(Qt::NoPen);
  
      // render a linear gradient on title area
@@ -106,7 +151,7 @@ index 48afd7b..322922b 100644
          QLinearGradient gradient(0, 0, 0, rect.height());
          gradient.setColorAt(0.0, titleBarColor().lighter(120));
          gradient.setColorAt(0.8, titleBarColor());
-@@ -635,7 +663,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -635,7 +708,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
          frontBrush = gradient;
  
      } else {
@@ -115,7 +160,7 @@ index 48afd7b..322922b 100644
  
          painter->setBrush(titleBarColor());
      }
-@@ -657,6 +685,12 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -657,6 +730,12 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
          painter->setClipRect(rect, Qt::IntersectClip);
  
          auto drawThe = [this, painter](const QRectF &r) {
@@ -128,7 +173,7 @@ index 48afd7b..322922b 100644
              painter->drawRoundedRect(r, m_scaledCornerRadius, m_scaledCornerRadius);
              // remove the rounding on the bottom
              painter->drawRect(QRectF(r.bottomLeft() - QPointF(0, m_scaledCornerRadius), r.bottomRight()));
-@@ -765,6 +799,10 @@ QPair<QRectF, Qt::Alignment> Decoration::captionRect() const
+@@ -765,6 +844,10 @@ QPair<QRectF, Qt::Alignment> Decoration::captionRect() const
  void Decoration::updateShadow()
  {
      auto s = settings();
@@ -139,7 +184,7 @@ index 48afd7b..322922b 100644
  
      // Animated case, no cached shadow object
      if ((m_shadowAnimation->state() == QAbstractAnimation::Running) && (m_shadowOpacity != 0.0) && (m_shadowOpacity != 1.0)) {
-@@ -854,7 +892,7 @@ void Decoration::setScaledCornerRadius()
+@@ -854,7 +937,7 @@ void Decoration::setScaledCornerRadius()
      // On X11, the smallSpacing value is used for scaling.
      // On Wayland, this value has constant factor of 2.
      // Removing it will break radius scaling on X11.
