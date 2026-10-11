@@ -130,4 +130,4 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 
 ## 应用菜单图标
 
-2026-10-12 将顶部左侧应用菜单换为 Arch Linux 图标。安装器保存图标，`--panels` 恢复布局时选用 `frosted-arch`。图标来自 [Arch Linux 官方 artwork 1.6](https://sources.archlinux.org/other/artwork/archlinux-artwork-1.6.tar.gz)，由 Thayer Williams 绘制，原始 SVG 保持不变。素材保留上游 CC BY-NC-SA 3.0 许可与 Arch 商标归属，详见 `docs/arch-artwork-authors.txt` 和 `LICENSES/CC-BY-NC-SA-3.0.txt`。
+2026-10-12 将顶部左侧应用菜单换为 Arch Linux 图标。安装器保存图标，`--panels` 恢复布局时选用 `frosted-arch-white`。图标来自 [Arch Linux 官方 artwork 1.6](https://sources.archlinux.org/other/artwork/archlinux-artwork-1.6.tar.gz)，由 Thayer Williams 绘制，保留官方轮廓，改为与面板一致的纯白色。素材保留上游 CC BY-NC-SA 3.0 许可与 Arch 商标归属，详见 `docs/arch-artwork-authors.txt` 和 `LICENSES/CC-BY-NC-SA-3.0.txt`。

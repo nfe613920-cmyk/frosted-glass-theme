@@ -23,7 +23,7 @@ kickoff.currentConfigGroup = [];
 kickoff.writeConfig("popupHeight", 529);
 kickoff.writeConfig("popupWidth", 621);
 kickoff.currentConfigGroup = ["General"];
-kickoff.writeConfig("icon", "frosted-arch");
+kickoff.writeConfig("icon", "frosted-arch-white");
 top.addWidget("org.kde.plasma.pager");
 top.addWidget("org.kde.plasma.panelspacer");
 top.addWidget("org.kde.plasma.marginsseparator");
