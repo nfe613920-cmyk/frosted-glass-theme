@@ -2,7 +2,7 @@
 
 保存 2026-10-10 的 KDE Plasma 毛玻璃桌面效果，重装系统后可按新用户名恢复。
 
-包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark、Kate、KWrite 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
+包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark、Kate、KWrite、Spectacle 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
 
 ## 主题参数
 
@@ -169,3 +169,21 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 ## KWrite 毛玻璃
 
 `build-kate.py` 同时构建 KWrite。安装完整 Kate bundle 时自动安装 `kwrite-glass` 启动器和对应应用菜单项，与 Kate 共用私有库、编辑主题与原生毛玻璃标题栏。保留关闭按钮、工具栏和文件参数，不修改文本文件默认关联。KWrite 没有 Kate 的 `--new` 选项，启动器保留其原生启动方式。
+
+## Spectacle 毛玻璃（可选）
+
+截图主界面、图片标注窗口与设置对话框使用统一毛玻璃底色，保留窗口按钮、标注工具、缩放、截图倒计时与原有快捷键。截图本身保持原始内容。用户目录安装不会替换 `/usr/bin/spectacle`。
+
+```sh
+sudo pacman -S --needed spectacle kpipewire layer-shell-qt kquickimageeditor opencv tesseract qt6-multimedia qt6-wayland
+python3 scripts/build-spectacle.py
+python3 scripts/build-decoration.py
+python3 scripts/install.py --dry-run --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --spectacle-bundle build/spectacle-bundle-6.7.5
+python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --spectacle-bundle build/spectacle-bundle-6.7.5
+```
+
+构建器使用当前 Spectacle 的官方发行标签，也可传入 `--version 6.7.5`。缺少的 Plasma Wayland 协议构建文件保存于本仓库的 build 缓存，不安装到系统。源码支持 OpenCV 4.7 或 5.0。升级 KDE/Qt 后重新构建并安装匹配版本。
+
+安装同步应用菜单、所有桌面动作、全局快捷键 desktop 文件和两个 DBus 激活服务的入口；保留所有原始命令参数。注销后重新登录可刷新会话中已经缓存的快捷键入口，已有旧进程正常退出后新入口才会接管。
+
+已验证后台截图导出、打开现有图片进入标注模式、标注界面显示、设置页、数值输入框箭头与键盘编辑。没有修改截图区域选择覆盖层或视频录制后端。自动检查数值控件可运行 `python3 scripts/check-spectacle-spin.py build/实际补丁源码目录`。

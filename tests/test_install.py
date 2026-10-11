@@ -135,6 +135,32 @@ class InstallationTests(unittest.TestCase):
             self.assertFalse(kwrite.exists())
             self.assertFalse((home / '.local/bin/kwrite-glass').exists())
 
+    def test_spectacle_bundle_launchers_and_restore(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'new user'
+            bundle = Path(tmp) / 'bundle'
+            binary = bundle / 'bin/spectacle'
+            binary.parent.mkdir(parents=True)
+            binary.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
+            cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
+            subprocess.run(cmd + ['--apply', '--decoration', str(plugin), '--spectacle-bundle', str(bundle)], capture_output=True, check=True)
+            desktop = home / '.local/share/applications/org.kde.spectacle.desktop'
+            self.assertIn(str(home / '.local/bin/spectacle-glass'), desktop.read_text())
+            self.assertNotIn('Exec=/usr/bin/spectacle', desktop.read_text())
+            self.assertNotIn('DBusActivatable=true', desktop.read_text())
+            shortcut = home / '.local/share/kglobalaccel/org.kde.spectacle.desktop'
+            self.assertEqual(shortcut.read_text(), desktop.read_text())
+            services = [home / '.local/share/dbus-1/services' / (name + '.service') for name in ['org.kde.Spectacle', 'org.kde.spectacle']]
+            for service in services:
+                self.assertIn('--dbus', service.read_text())
+                self.assertNotIn('SystemdService', service.read_text())
+            backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
+            subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
+            for target in [desktop, shortcut, *services, home / '.local/opt/spectacle-glass', home / '.local/bin/spectacle-glass']:
+                self.assertFalse(target.exists())
+
     def test_kate_rejects_incomplete_bundle_without_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'empty'

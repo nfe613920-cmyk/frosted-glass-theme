@@ -1,0 +1,365 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2c18e00..b307ee7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -91,7 +91,10 @@ find_package(Wayland REQUIRED COMPONENTS Client)
+ find_package(PlasmaWaylandProtocols REQUIRED)
+ find_package(LayerShellQt REQUIRED)
+ find_package(KPipeWire)
+-find_package(OpenCV 4.7 REQUIRED core imgproc)
++find_package(OpenCV 4.7 QUIET COMPONENTS core imgproc)
++if (NOT OpenCV_FOUND)
++    find_package(OpenCV 5.0 REQUIRED COMPONENTS core imgproc)
++endif()
+ find_package(PkgConfig REQUIRED)
+ 
+ set_package_properties(KPipeWire PROPERTIES DESCRIPTION
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 84adc11..5437a21 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -159,6 +159,7 @@ qt_target_qml_sources(spectacle
+     Gui/CopyImageAction.qml
+     Gui/CopyLocationAction.qml
+     Gui/DashedOutline.qml
++    Gui/PanelGlassSpinBox.qml
+     Gui/DelaySpinBox.qml
+     Gui/DialogPage.qml
+     Gui/EditAction.qml
+diff --git a/src/Gui/AnnotationOptionsToolBarContents.qml b/src/Gui/AnnotationOptionsToolBarContents.qml
+index bef16aa..2310849 100644
+--- a/src/Gui/AnnotationOptionsToolBarContents.qml
++++ b/src/Gui/AnnotationOptionsToolBarContents.qml
+@@ -62,7 +62,7 @@ Row {
+                 }
+             }
+ 
+-            QQC.SpinBox {
++            PanelGlassSpinBox {
+                 id: spinBox
+                 function setStrokeWidth() {
+                     if (root.useSelectionOptions && root.selectedItem.strokeWidth !== spinBox.value) {
+@@ -325,7 +325,7 @@ Row {
+                 text: i18n("Number:")
+             }
+ 
+-            QQC.SpinBox {
++            PanelGlassSpinBox {
+                 id: spinBox
+                 readonly property int number: root.useSelectionOptions ? root.selectedItem.number : root.tool.number
+                 anchors.verticalCenter: parent.verticalCenter
+diff --git a/src/Gui/CaptureModeButtonsColumn.qml b/src/Gui/CaptureModeButtonsColumn.qml
+index 9071a5e..11a0660 100644
+--- a/src/Gui/CaptureModeButtonsColumn.qml
++++ b/src/Gui/CaptureModeButtonsColumn.qml
+@@ -14,7 +14,22 @@ ColumnLayout {
+         model: CaptureModeModel
+         delegate: QQC.DelayButton {
+             id: button
++            Component {
++                id: glassBackground
++                Rectangle {
++                function updateItem() {}
++                implicitWidth: label.implicitWidth + button.leftPadding + button.rightPadding
++                implicitHeight: label.implicitHeight + button.topPadding + button.bottomPadding
++                QQC.Label { id: label; anchors.centerIn: parent; text: button.text; color: button.palette.buttonText }
++                radius: 6
++                color: button.down ? "#3049b7df" : button.hovered ? "#1cffffff" : "#0cffffff"
++                border.color: button.activeFocus ? "#b449b7df" : "#28ffffff"
++                opacity: button.enabled ? 1 : 0.4
++                Rectangle { anchors.left: parent.left; anchors.bottom: parent.bottom; height: 3; width: parent.width * button.progress; color: "#a049b7df"; radius: 1 }
++            }
++            }
+             readonly property bool showCancel: Settings.captureMode === model.captureMode && SpectacleCore.captureTimeRemaining > 0
++            Component.onCompleted: if (typeof panelGlass !== "undefined" && panelGlass) background = glassBackground.createObject(button)
+             Layout.fillWidth: true
+             leftPadding: Kirigami.Units.mediumSpacing + QmlUtils.fontMetrics.descent
+             rightPadding: Kirigami.Units.mediumSpacing + QmlUtils.fontMetrics.descent
+diff --git a/src/Gui/DelaySpinBox.qml b/src/Gui/DelaySpinBox.qml
+index de4feb7..4479fe2 100644
+--- a/src/Gui/DelaySpinBox.qml
++++ b/src/Gui/DelaySpinBox.qml
+@@ -10,7 +10,7 @@ import org.kde.spectacle.private
+ /**
+  * Meant to mimic the behavior of SmartSpinBox, a custom Qt Widget spinbox created for Spectacle.
+  */
+-QQC.SpinBox {
++PanelGlassSpinBox {
+     id: root
+     readonly property string noDelayString: i18nc("0 second delay", "No Delay")
+ 
+diff --git a/src/Gui/DialogPage.qml b/src/Gui/DialogPage.qml
+index 8742a62..dc08730 100644
+--- a/src/Gui/DialogPage.qml
++++ b/src/Gui/DialogPage.qml
+@@ -48,6 +48,14 @@ EmptyPage {
+     component ConfigHelpButtonRow : Row {
+         spacing: Kirigami.Units.mediumSpacing
+         QQC.Button {
++            id: configureButton
++            background: Rectangle { function updateItem() {}
++                implicitWidth: configureContent.implicitWidth + 16; implicitHeight: configureContent.implicitHeight + 12
++                Row { id: configureContent; anchors.centerIn: parent; spacing: 6
++                    Kirigami.Icon { width: 18; height: 18; source: configureButton.icon.name; color: configureButton.palette.buttonText }
++                    QQC.Label { text: configureButton.text; color: configureButton.palette.buttonText }
++                }
++                radius: 6; color: configureButton.down ? "#3049b7df" : configureButton.hovered ? "#1cffffff" : "#0cffffff"; border.color: "#28ffffff" }
+             y: dprRound((parent.height - height) / 2)
+             icon.name: "configure"
+             text: i18n("Configure Spectacle…")
+@@ -55,6 +63,14 @@ EmptyPage {
+         }
+         // Only ToolButton supports the menu button style with qqc2-desktop-style
+         QQC.ToolButton {
++            id: helpButton
++            background: Rectangle { function updateItem() {}
++                implicitWidth: helpContent.implicitWidth + 16; implicitHeight: helpContent.implicitHeight + 12
++                Row { id: helpContent; anchors.centerIn: parent; spacing: 6
++                    Kirigami.Icon { width: 18; height: 18; source: helpButton.icon.name; color: helpButton.palette.buttonText }
++                    QQC.Label { text: helpButton.text; color: helpButton.palette.buttonText }
++                }
++                radius: 6; color: helpButton.down ? "#3049b7df" : helpButton.hovered ? "#1cffffff" : "#0cffffff"; border.color: "#28ffffff" }
+             y: dprRound((parent.height - height) / 2)
+             flat: false
+             icon.name: "help-contents"
+diff --git a/src/Gui/EmptyPage.qml b/src/Gui/EmptyPage.qml
+index fb88042..a3e5453 100644
+--- a/src/Gui/EmptyPage.qml
++++ b/src/Gui/EmptyPage.qml
+@@ -10,6 +10,9 @@ import QtQuick.Templates as T
+  * but inherits no externally defined content or behavior.
+  */
+ T.Page {
++    readonly property bool glassEnabled: typeof panelGlass !== "undefined" && panelGlass
++    Component.onCompleted: if (glassEnabled) palette.window = "transparent"
++    background: Rectangle { color: glassEnabled ? "#911b2b37" : "transparent" }
+     // implicitHeader/FooterWidth and implicitHeader/FooterHeight are 0 when header/footer is not visible
+     implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
+                             contentWidth + leftPadding + rightPadding,
+diff --git a/src/Gui/PanelGlassSpinBox.qml b/src/Gui/PanelGlassSpinBox.qml
+new file mode 100644
+index 0000000..89a1dd7
+--- /dev/null
++++ b/src/Gui/PanelGlassSpinBox.qml
+@@ -0,0 +1,46 @@
++// SPDX-License-Identifier: MIT
++import QtQuick
++import QtQuick.Templates as T
++import QtQuick.Controls as QQC
++
++T.SpinBox {
++    id: root
++    implicitWidth: implicitContentWidth + leftPadding + rightPadding
++    implicitHeight: implicitContentHeight + topPadding + bottomPadding
++    padding: 4
++    leftPadding: 6
++    rightPadding: 24
++    editable: true
++    wheelEnabled: true
++    hoverEnabled: true
++    validator: IntValidator { bottom: Math.min(root.from, root.to); top: Math.max(root.from, root.to) }
++    background: Rectangle { radius: 4; color: "#0cffffff"; border.color: root.activeFocus ? "#b449b7df" : "#28ffffff" }
++    up.indicator: Rectangle {
++        x: root.width - width; y: 0; implicitWidth: 20; implicitHeight: root.height / 2
++        color: root.up.pressed ? "#3049b7df" : root.up.hovered ? "#1cffffff" : "transparent"
++        QQC.Label { anchors.centerIn: parent; text: "⌃"; color: root.palette.text }
++    }
++    down.indicator: Rectangle {
++        x: root.width - width; y: root.height / 2; implicitWidth: 20; implicitHeight: root.height / 2
++        color: root.down.pressed ? "#3049b7df" : root.down.hovered ? "#1cffffff" : "transparent"
++        QQC.Label { anchors.centerIn: parent; text: "⌄"; color: root.palette.text }
++    }
++    contentItem: QQC.TextField {
++        implicitWidth: metrics.advanceWidth + 6
++        implicitHeight: metrics.height + 2
++        font: root.font
++        color: root.palette.text
++        text: root.displayText
++        background: null
++        padding: 0
++        selectByMouse: true
++        readOnly: !root.editable
++        validator: root.validator
++        verticalAlignment: Text.AlignVCenter
++        TextMetrics { id: metrics; font: root.font; text: root.textFromValue(root.to, root.locale) }
++        onEditingFinished: if (acceptableInput) {
++            root.value = root.valueFromText(text, root.locale)
++            root.valueModified()
++        }
++    }
++}
+diff --git a/src/Gui/RecordingModeButtonsColumn.qml b/src/Gui/RecordingModeButtonsColumn.qml
+index 2737f62..91b9705 100644
+--- a/src/Gui/RecordingModeButtonsColumn.qml
++++ b/src/Gui/RecordingModeButtonsColumn.qml
+@@ -15,6 +15,20 @@ ColumnLayout {
+         model: RecordingModeModel
+         delegate: QQC.Button {
+             id: button
++            Component {
++                id: glassBackground
++                Rectangle {
++                function updateItem() {}
++                implicitWidth: label.implicitWidth + button.leftPadding + button.rightPadding
++                implicitHeight: label.implicitHeight + button.topPadding + button.bottomPadding
++                QQC.Label { id: label; anchors.centerIn: parent; text: button.text; color: button.palette.buttonText }
++                radius: 6
++                color: button.down ? "#3049b7df" : button.hovered ? "#1cffffff" : "#0cffffff"
++                border.color: button.activeFocus ? "#b449b7df" : "#28ffffff"
++                opacity: button.enabled ? 1 : 0.4
++            }
++            }
++            Component.onCompleted: if (typeof panelGlass !== "undefined" && panelGlass) background = glassBackground.createObject(button)
+             Layout.fillWidth: true
+             leftPadding: Kirigami.Units.mediumSpacing + QmlUtils.fontMetrics.descent
+             rightPadding: Kirigami.Units.mediumSpacing + QmlUtils.fontMetrics.descent
+diff --git a/src/Gui/SettingsDialog/SettingsDialog.cpp b/src/Gui/SettingsDialog/SettingsDialog.cpp
+index 0bfab8b..4424c7c 100644
+--- a/src/Gui/SettingsDialog/SettingsDialog.cpp
++++ b/src/Gui/SettingsDialog/SettingsDialog.cpp
+@@ -17,6 +17,8 @@
+ #include "settings.h"
+ 
+ #include <QFontDatabase>
++#include <QPainter>
++#include <KWindowEffects>
+ #include <QScreen>
+ #include <QStyle>
+ #include <QWindow>
+@@ -33,6 +35,29 @@ SettingsDialog::SettingsDialog(QWidget *parent)
+     , m_videosPage(new VideoSaveOptionsPage(this))
+     , m_shortcutsPage(new ShortcutsOptionsPage(this))
+ {
++    if (qEnvironmentVariableIsSet("SPECTACLE_PANEL_GLASS")) {
++        setAttribute(Qt::WA_TranslucentBackground);
++        auto glassPalette = palette();
++        for (auto group : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
++            glassPalette.setColor(group, QPalette::Window, Qt::transparent);
++            glassPalette.setColor(group, QPalette::Base, Qt::transparent);
++            glassPalette.setColor(group, QPalette::AlternateBase, QColor(255, 255, 255, 10));
++        }
++        setPalette(glassPalette);
++        setStyleSheet(QStringLiteral(
++            "QDialog, QFrame, QAbstractScrollArea, QAbstractItemView, QStackedWidget { background: transparent; border: none; }"
++            "QPushButton { background: rgba(255,255,255,12); border: 1px solid rgba(255,255,255,40); border-radius: 6px; padding: 5px 10px; }"
++            "QPushButton:hover { background: rgba(255,255,255,28); border-color: rgba(255,255,255,80); }"
++            "QPushButton:pressed { background: rgba(73,183,223,45); }"
++            "QPushButton:focus { border-color: rgba(73,183,223,180); }"
++            "QPushButton:disabled { color: rgba(255,255,255,90); }"
++            "QLineEdit, QComboBox, QSpinBox { background: rgba(255,255,255,12); border: 1px solid rgba(255,255,255,40); border-radius: 4px; padding: 4px; }"
++            "QHeaderView, QHeaderView::section { background: transparent; border: none; }"
++            "QScrollBar { background: transparent; width: 10px; height: 10px; }"
++            "QScrollBar::handle { background: rgba(255,255,255,60); border-radius: 4px; min-height: 20px; min-width: 20px; }"
++            "QScrollBar::add-line, QScrollBar::sub-line { width: 0px; height: 0px; }"
++            "QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }"));
++    }
+     setFaceType(KPageDialog::List);
+     addPage(m_generalPage, Settings::self(), i18nc("Settings category", "General"), "spectacle"_L1);
+     addPage(m_imagesPage, Settings::self(), i18nc("Settings category", "Image Saving"), "image-x-generic"_L1);
+@@ -84,6 +109,16 @@ void SettingsDialog::showEvent(QShowEvent *event)
+     m_generalPage->refreshOcrLanguageSettings();
+     
+     KConfigDialog::showEvent(event);
++    if (qEnvironmentVariableIsSet("SPECTACLE_PANEL_GLASS")) KWindowEffects::enableBlurBehind(windowHandle(), true);
++}
++
++void SettingsDialog::paintEvent(QPaintEvent *event)
++{
++    if (qEnvironmentVariableIsSet("SPECTACLE_PANEL_GLASS")) {
++        QPainter painter(this);
++        painter.fillRect(rect(), QColor(27, 43, 55, 145));
++    }
++    KConfigDialog::paintEvent(event);
+ }
+ 
+ bool SettingsDialog::hasChanged()
+diff --git a/src/Gui/SettingsDialog/SettingsDialog.h b/src/Gui/SettingsDialog/SettingsDialog.h
+index 64281dd..e70c011 100644
+--- a/src/Gui/SettingsDialog/SettingsDialog.h
++++ b/src/Gui/SettingsDialog/SettingsDialog.h
+@@ -25,6 +25,7 @@ public:
+ protected:
+     QSize sizeHint() const override;
+     void showEvent(QShowEvent *event) override;
++    void paintEvent(QPaintEvent *event) override;
+ 
+ private:
+     bool hasChanged() override;
+diff --git a/src/Gui/ViewerPage.qml b/src/Gui/ViewerPage.qml
+index 4d6f6f3..f42aeb9 100644
+--- a/src/Gui/ViewerPage.qml
++++ b/src/Gui/ViewerPage.qml
+@@ -36,6 +36,7 @@ EmptyPage {
+ 
+     header: QQC.ToolBar {
+         id: header
++        background: Rectangle { color: root.glassEnabled ? "transparent" : header.palette.window }
+         contentItem: ButtonGrid {
+             id: mainToolBarContents
+             animationsEnabled: true
+@@ -117,7 +118,7 @@ EmptyPage {
+             showNoneButton: true
+         }
+         background: Rectangle {
+-            color: parent.palette.window
++            color: root.glassEnabled ? "transparent" : parent.palette.window
+         }
+     }
+ 
+@@ -156,6 +157,7 @@ EmptyPage {
+         visible: false
+         active: visible
+         sourceComponent: QQC.ToolBar { // parent is contentItem
++            background: Rectangle { color: root.glassEnabled ? "transparent" : palette.window }
+             position: QQC.ToolBar.Footer
+             contentHeight: QmlUtils.iconTextButtonHeight
+             contentItem: RowLayout {
+@@ -187,7 +189,7 @@ EmptyPage {
+                     id: zoomLabel
+                     text: i18n("Zoom:")
+                 }
+-                QQC.SpinBox {
++                PanelGlassSpinBox {
+                     id: zoomEditor
+                     from: contentLoader.item.minZoom * 100
+                     to: contentLoader.item.maxZoom * 100
+diff --git a/src/Gui/ViewerWindow.cpp b/src/Gui/ViewerWindow.cpp
+index 716703b..74fd6bf 100644
+--- a/src/Gui/ViewerWindow.cpp
++++ b/src/Gui/ViewerWindow.cpp
+@@ -13,6 +13,7 @@
+ #include "SpectacleCore.h"
+ 
+ #include <KSharedConfig>
++#include <KWindowEffects>
+ #include <KUrlMimeData>
+ #include <KWindowConfig>
+ #include <Kirigami/Platform/Units>
+@@ -41,6 +42,7 @@ ViewerWindow::ViewerWindow(Mode mode, QQmlEngine *engine, QWindow *parent)
+     new QShortcut(QKeySequence::Copy, this, this, &ViewerWindow::copyImage);
+     new QShortcut(QKeySequence::Print, this, this, &ViewerWindow::showPrintDialog);
+ 
++    m_context->setContextProperty(u"panelGlass"_s, qEnvironmentVariableIsSet("SPECTACLE_PANEL_GLASS"));
+     m_context->setContextObject(this); // Must be before QML is initialized
+ 
+     connect(ExportMenu::instance(), &ExportMenu::imageShared, this, [this](int error, const QString &message) {
+@@ -137,7 +139,8 @@ void ViewerWindow::setMode(ViewerWindow::Mode mode)
+ 
+ void ViewerWindow::updateColor()
+ {
+-    setColor(qGuiApp->palette().color(m_backgroundColorRole));
++    setColor(qEnvironmentVariableIsSet("SPECTACLE_PANEL_GLASS")
++        ? QColor(Qt::transparent) : qGuiApp->palette().color(m_backgroundColorRole));
+ }
+ 
+ void ViewerWindow::setBackgroundColorRole(QPalette::ColorRole role)
+@@ -210,6 +213,9 @@ void ViewerWindow::startDrag()
+ 
+ bool ViewerWindow::event(QEvent *event)
+ {
++    if (event->type() == QEvent::Show && qEnvironmentVariableIsSet("SPECTACLE_PANEL_GLASS")) {
++        KWindowEffects::enableBlurBehind(this, true);
++    }
+     if (event->type() == QEvent::ApplicationPaletteChange) {
+         updateColor();
+     }

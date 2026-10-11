@@ -28,3 +28,5 @@ Kate 补丁基于 [Kate v26.08.2](https://github.com/KDE/kate/tree/v26.08.2)，�
 `PanelGlass.theme` 基于 [KSyntaxHighlighting v6.30.0 的 Breeze Dark](https://github.com/KDE/syntax-highlighting/blob/v6.30.0/data/themes/breeze-dark.theme)，保留 Volker Krause、Dominik Haumann 和 MIT 许可元数据。
 
 KWrite 使用同一 Kate v26.08.2 源码树及主窗口库，无新增上游来源。窗口装饰额外精确匹配 `kwrite` / `org.kde.kwrite`。
+
+Spectacle 基于 [v6.7.5](https://github.com/KDE/spectacle/tree/v6.7.5)，基准提交 `343a0229b4cbb7961ae915629eaa687f8ef81eaa`，保留修改文件的 LGPL-2.0-or-later 及原作者声明。新增数值输入组件为 MIT。构建使用 [Plasma Wayland Protocols v1.20.0](https://github.com/KDE/plasma-wayland-protocols/tree/v1.20.0)，只作为缓存内的构建依赖；Qt Quick 界面与 Qt Widgets 设置窗口分别绘制一次相同玻璃底色。

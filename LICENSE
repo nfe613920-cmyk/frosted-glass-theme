@@ -14,6 +14,8 @@ This repository contains components under multiple licenses:
   source attribution. See LICENSES/GPL-2.0-or-later.txt.
 * The Kate and KTextEditor patches retain KDE source attribution and their
   per-file LGPL-2.0-only / LGPL-2.0-or-later licensing. See LICENSES and docs/upstream.md.
+* The Spectacle patch retains upstream LGPL-2.0-or-later licensing and attribution.
+  The new PanelGlassSpinBox.qml component is original MIT code.
 * The Panel Glass editor theme is based on KDE Breeze Dark, under MIT,
   retaining Volker Krause and Dominik Haumann attribution in its metadata.
 * The Arch Linux application-menu icon is from official artwork 1.6 by

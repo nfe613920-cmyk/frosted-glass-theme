@@ -179,6 +179,31 @@ def install_kwrite(home, bundle, copy, write):
     write(home / '.local/share/applications/org.kde.kwrite.desktop', '\n'.join(lines) + '\n')
 
 
+def install_spectacle(home, bundle, copy, write):
+    copy(bundle, home / '.local/opt/spectacle-glass')
+    launcher = home / '.local/bin/spectacle-glass'
+    write(launcher, (ROOT / 'scripts/spectacle-glass.py').read_text(), 0o755)
+    desktop = Path('/usr/share/applications/org.kde.spectacle.desktop')
+    text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Spectacle\nIcon=spectacle\nExec=spectacle %U\n'
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    lines = []
+    for line in text.splitlines():
+        if line.startswith('Exec='):
+            command = line[5:].split(maxsplit=1)
+            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+        if line.startswith('TryExec='):
+            line = 'TryExec=spectacle'
+        if line.startswith('DBusActivatable='):
+            line = 'DBusActivatable=false'
+        lines.append(line)
+    write(home / '.local/share/applications/org.kde.spectacle.desktop', '\n'.join(lines) + '\n')
+
+    write(home / '.local/share/kglobalaccel/org.kde.spectacle.desktop', '\n'.join(lines) + '\n')
+    for name in ['org.kde.Spectacle', 'org.kde.spectacle']:
+        service = '[D-BUS Service]\nName=' + name + '\nExec="' + escaped + '" --dbus\n'
+        write(home / '.local/share/dbus-1/services' / (name + '.service'), service)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
@@ -190,6 +215,7 @@ def main():
     parser.add_argument('--decoration', type=Path, help='Built Breeze decoration plugin .so')
     parser.add_argument('--dolphin-bundle', type=Path, help='Optional bundle made by build-dolphin.py; requires the matching decoration')
     parser.add_argument('--ark-bundle', type=Path, help='Optional bundle made by build-ark.py; requires the matching decoration')
+    parser.add_argument('--spectacle-bundle', type=Path, help='Optional Spectacle glass bundle; requires matching decoration')
     parser.add_argument('--kate-bundle', type=Path, help='Optional bundle made by build-kate.py; requires the matching decoration')
     parser.add_argument('--panels', action='store_true', help='Replace all existing panels with the saved top panel and bottom dock')
     args = parser.parse_args()
@@ -215,6 +241,9 @@ def main():
             parser.error('--ark-bundle requires --decoration for matching titlebar and corners')
         if not (args.ark_bundle / 'bin/ark').is_file() or not list((args.ark_bundle / 'lib').glob('libkerfuffle.so.*')):
             parser.error('Ark bundle is incomplete; build it first')
+    if args.spectacle_bundle:
+        if not args.decoration or not (args.spectacle_bundle / 'bin/spectacle').is_file():
+            parser.error('Spectacle requires a complete bundle and matching decoration')
     if args.kate_bundle:
         if not args.decoration:
             parser.error('--kate-bundle requires --decoration for matching titlebar and corners')
@@ -233,6 +262,8 @@ def main():
         plan.append(('Install opt-in Dolphin glass build and launcher', '.local/opt/dolphin-glass'))
     if args.ark_bundle:
         plan.append(('Install opt-in Ark glass build and launcher', '.local/opt/ark-glass'))
+    if args.spectacle_bundle:
+        plan.append(('Install Spectacle glass build, desktop and DBus launchers', '.local/opt/spectacle-glass'))
     if args.kate_bundle:
         plan.append(('Install opt-in Kate glass build, editor theme and launcher', '.local/opt/kate-glass'))
     if args.panels:
@@ -304,6 +335,8 @@ def main():
         write(home / '.local/share/kglobalaccel/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
         if args.dolphin_bundle:
             install_dolphin(home, args.dolphin_bundle, copy, write)
+        if args.spectacle_bundle:
+            install_spectacle(home, args.spectacle_bundle, copy, write)
         if args.ark_bundle:
             install_ark(home, args.ark_bundle, copy, write)
         if args.kate_bundle:
