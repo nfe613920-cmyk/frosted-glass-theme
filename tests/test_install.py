@@ -155,6 +155,10 @@ class InstallationTests(unittest.TestCase):
             auth = home / '.local/share/applications/org.kde.spectacle-glass-capture.desktop'
             self.assertIn(str(home / '.local/opt/spectacle-glass/bin/spectacle'), auth.read_text())
             self.assertIn('X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2', auth.read_text())
+            stock_auth = home / '.local/share/applications/org.kde.spectacle-system-capture.desktop'
+            if Path('/usr/bin/spectacle').is_file():
+                self.assertIn('Exec="/usr/bin/spectacle"', stock_auth.read_text())
+                self.assertIn('NoDisplay=true', stock_auth.read_text())
             self.assertIn('NoDisplay=true', auth.read_text())
             services = [home / '.local/share/dbus-1/services' / (name + '.service') for name in ['org.kde.Spectacle', 'org.kde.spectacle']]
             for service in services:

@@ -206,6 +206,11 @@ def install_spectacle(home, bundle, copy, write):
                      'Exec="' + escaped_binary + '"\n'
                      'X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n')
     write(home / '.local/share/applications/org.kde.spectacle-glass-capture.desktop', authorization)
+    # The user desktop override hides the system desktop's original Exec too.
+    # Keep the stock executable authorized for cached/explicit system launches.
+    if Path('/usr/bin/spectacle').is_file():
+        stock_authorization = authorization.replace('Spectacle Glass Capture', 'Spectacle System Capture').replace('Exec="' + escaped_binary + '"', 'Exec="/usr/bin/spectacle"')
+        write(home / '.local/share/applications/org.kde.spectacle-system-capture.desktop', stock_authorization)
 
     for name in ['org.kde.Spectacle', 'org.kde.spectacle']:
         service = '[D-BUS Service]\nName=' + name + '\nExec="' + escaped + '" --dbus\n'

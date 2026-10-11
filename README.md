@@ -188,7 +188,7 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 
 已验证后台截图导出、打开现有图片进入标注模式、标注界面显示、设置页、数值输入框箭头与键盘编辑。没有修改截图区域选择覆盖层或视频录制后端。自动检查数值控件可运行 `python3 scripts/check-spectacle-spin.py build/实际补丁源码目录`。
 
-Spectacle 另有隐藏的 `org.kde.spectacle-glass-capture.desktop`，其 Exec 直接指向实际程序并声明截图接口。KWin 根据 `/proc` 中的程序路径查找授权，Python 启动脚本无法代替实际程序。该条目不增加应用菜单图标，卸载恢复时一并删除。
+Spectacle 另有隐藏的 `org.kde.spectacle-glass-capture.desktop`，其 Exec 直接指向实际程序并声明截图接口。KWin 根据 `/proc` 中的程序路径查找授权，Python 启动脚本无法代替实际程序。同时保留系统程序的隐藏授权条目，让缓存的旧启动入口或显式 `/usr/bin/spectacle` 仍有原始截图权限。这些条目不增加应用菜单图标，卸载恢复时一并删除。
 
 ## 其他 KDE / Qt 6 应用
 
