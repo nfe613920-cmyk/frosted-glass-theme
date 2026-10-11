@@ -127,3 +127,7 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 安装器同时写入 `~/.local/share/applications/` 和 `~/.local/share/kglobalaccel/` 的启动项，确保 `Ctrl+Alt+T` 与 `Meta+E` 使用相同的毛玻璃启动命令。只覆盖应用菜单会漏掉 KDE 的全局快捷键入口。
 
 当前 KDE 会话会缓存已经注册的启动命令，因此安装后注销再登录，让快捷键加载新入口。用户目录中的覆盖项会保留到下一次登录，也包含在安装器的回滚备份中。
+
+## 应用菜单图标
+
+2026-10-12 将顶部左侧应用菜单换为 Arch Linux 图标。安装器保存图标，`--panels` 恢复布局时选用 `frosted-arch`。图标来自 [Arch Linux 官方 artwork 1.6](https://sources.archlinux.org/other/artwork/archlinux-artwork-1.6.tar.gz)，由 Thayer Williams 绘制，原始 SVG 保持不变。素材保留上游 CC BY-NC-SA 3.0 许可与 Arch 商标归属，详见 `docs/arch-artwork-authors.txt` 和 `LICENSES/CC-BY-NC-SA-3.0.txt`。

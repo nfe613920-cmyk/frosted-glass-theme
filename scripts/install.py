@@ -192,6 +192,7 @@ def main():
         for category in ['plasma/desktoptheme', 'plasma/plasmoids', 'konsole', 'color-schemes']:
             for source in (ROOT / 'assets' / category).iterdir():
                 copy(source, home / '.local/share' / category / source.name)
+        copy(ROOT / 'assets/icons/frosted-arch.svg', home / '.local/share/icons/hicolor/scalable/apps/frosted-arch.svg')
         config('plasmarc', ['Theme'], 'name', 'codex-frosted-glass')
         config('konsolerc', ['Desktop Entry'], 'DefaultProfile', 'PanelGlass.profile')
         config('konsolerc', ['UiSettings'], 'ColorScheme', 'KonsolePanelGlass')

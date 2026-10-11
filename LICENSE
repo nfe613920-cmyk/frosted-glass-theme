@@ -12,6 +12,9 @@ This repository contains components under multiple licenses:
   licenses for build files. See LICENSES/GPL-2.0-or-later.txt.
 * The Dolphin source patch remains under GPL-2.0-or-later, retaining KDE
   source attribution. See LICENSES/GPL-2.0-or-later.txt.
+* The Arch Linux application-menu icon is from official artwork 1.6 by
+  Thayer Williams, under CC BY-NC-SA-3.0. See LICENSES/CC-BY-NC-SA-3.0.txt
+  and docs/arch-artwork-authors.txt. Arch Linux trademark rights are retained.
 * Konsole color entries are based on KDE Konsole's Breeze colorscheme.
 
 No license is asserted for third-party software linked from the documentation.
