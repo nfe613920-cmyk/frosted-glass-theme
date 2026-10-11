@@ -101,6 +101,45 @@ class InstallationTests(unittest.TestCase):
             self.assertFalse((home / '.local/opt/ark-glass').exists())
             self.assertFalse((home / '.local/bin/ark-glass').exists())
 
+    def test_kate_bundle_theme_and_launcher_restore(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'new user'
+            bundle = Path(tmp) / 'bundle'
+            for name in ['bin/kate', 'lib/libkateprivate.so.26.08.2', 'lib/libKF6TextEditor.so.6']:
+                target = bundle / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
+            desktop = home / '.local/share/applications/org.kde.kate.desktop'
+            theme = home / '.local/share/org.kde.syntax-highlighting/themes/PanelGlass.theme'
+            for target in [desktop, theme]:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text('previous content')
+            cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
+            subprocess.run(cmd + ['--apply', '--decoration', str(plugin), '--kate-bundle', str(bundle)], capture_output=True, check=True)
+            self.assertIn(str(home / '.local/bin/kate-glass'), desktop.read_text())
+            self.assertIn('%U', desktop.read_text())
+            self.assertNotIn('DBusActivatable=true', desktop.read_text())
+            self.assertTrue((home / '.local/opt/kate-glass/lib/libKF6TextEditor.so.6').is_file())
+            self.assertEqual(json.loads(theme.read_text())['metadata']['name'], 'Panel Glass')
+            backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
+            subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
+            self.assertEqual(desktop.read_text(), 'previous content')
+            self.assertEqual(theme.read_text(), 'previous content')
+            self.assertFalse((home / '.local/opt/kate-glass').exists())
+            self.assertFalse((home / '.local/bin/kate-glass').exists())
+
+    def test_kate_rejects_incomplete_bundle_without_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'empty'
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
+            for flags in [[], ['--decoration', str(plugin)]]:
+                result = subprocess.run([sys.executable, str(SCRIPT), '--home', str(home), '--no-live', '--apply', '--kate-bundle', tmp] + flags, capture_output=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(home.exists())
+
     def test_ark_rejects_invalid_bundle_without_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'empty'

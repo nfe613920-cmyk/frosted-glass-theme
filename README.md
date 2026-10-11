@@ -2,7 +2,7 @@
 
 保存 2026-10-10 的 KDE Plasma 毛玻璃桌面效果，重装系统后可按新用户名恢复。
 
-包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
+包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark、Kate 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
 
 ## 主题参数
 
@@ -147,3 +147,21 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 使用构建脚本打印的实际路径。可以同时传入 `--dolphin-bundle`；默认不改面板布局。安装器将程序和私有库保存到 `~/.local/opt/ark-glass`，用户应用菜单和压缩包文件关联沿用 `org.kde.ark.desktop`，调用 `~/.local/bin/ark-glass`。命令行也可使用这个启动器，支持 Ark 原有参数；直接执行 `/usr/bin/ark` 仍是发行版程序。
 
 自定义主程序复用系统同版本 Ark 的 KPart 和压缩后端，因此必须与系统 Ark 版本匹配。升级 Ark、Breeze 或 KDE/Qt 后重新构建并安装。安装器自动备份 Ark 启动项和程序目录，可用同一个 `--restore` 恢复；不修改现有压缩包、文件关联首选顺序或 Ark 功能设置。
+
+## Kate 整块毛玻璃（可选）
+
+Kate 的标题栏、菜单、工具栏、标签页、侧栏、欢迎页和编辑区使用同一底色与透明度。`Panel Glass` 编辑主题保留 Breeze Dark 的语法高亮，行号区透明，当前行只保留轻微提示。KTextEditor 的缩略图和普通滚动条去掉独立实心背景，保留缩略图、书签标记与滚动行为。
+
+```sh
+sudo pacman -S --needed kate ktexteditor syntax-highlighting kparts kio karchive sonnet kauth editorconfig qt6-declarative qt6-speech
+python3 scripts/build-kate.py
+python3 scripts/build-decoration.py
+python3 scripts/install.py --dry-run --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --kate-bundle build/kate-bundle-26.08.2
+python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --kate-bundle build/kate-bundle-26.08.2
+```
+
+以脚本实际输出路径为准。非 Arch 系统显式传入已安装的版本，例如 `python3 scripts/build-kate.py --kate-version 26.08.2 --ktexteditor-version 6.30.0`。构建器下载对应官方标签，只构建 Kate 主程序、私有库和 KTextEditor 库，不替换系统程序或框架。
+
+用户目录中的 `~/.local/bin/kate-glass` 为新实例设置 `KATE_PANEL_GLASS=1` 并加载 `~/.local/opt/kate-glass/lib`，应用菜单和已有 Kate 文件关联使用这一入口。`/usr/bin/kate` 和其他使用 KTextEditor 的应用保持系统版本。安装不会把 Kate 设成所有文本文件的默认应用。
+
+安装器备份 Kate 程序、启动项和编辑主题。升级 Kate、KTextEditor、Breeze 或 KDE/Qt 后重新构建匹配版本并安装。当前验证包括语法高亮显示、插入、撤销、重做、UTF-8 保存回读、分栏和欢迎页。

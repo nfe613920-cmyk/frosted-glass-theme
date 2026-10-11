@@ -1,0 +1,53 @@
+diff --git a/src/view/kateviewhelpers.cpp b/src/view/kateviewhelpers.cpp
+index e236669..0792edf 100644
+--- a/src/view/kateviewhelpers.cpp
++++ b/src/view/kateviewhelpers.cpp
+@@ -765,9 +765,14 @@ void KateScrollBar::updatePixmap()
+ 
+ void KateScrollBar::miniMapPaintEvent(QPaintEvent *e)
+ {
+-    QScrollBar::paintEvent(e);
++    if (!qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) QScrollBar::paintEvent(e);
+ 
+     QPainter painter(this);
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) {
++        painter.setCompositionMode(QPainter::CompositionMode_Source);
++        painter.fillRect(rect(), QColor(27, 43, 55, 145));
++        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
++    }
+ 
+     QStyleOptionSlider opt;
+     opt.initFrom(this);
+@@ -897,7 +902,8 @@ void KateScrollBar::miniMapPaintEvent(QPaintEvent *e)
+                        grooveRect.height() - (visibleRect.y() - grooveRect.y()) - visibleRect.height());
+ 
+     QColor faded(backgroundColor);
+-    faded.setAlpha(110);
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) faded = QColor(255, 255, 255, 10);
++    else faded.setAlpha(110);
+     painter.fillRect(top, faded);
+     painter.fillRect(bottom, faded);
+ 
+@@ -947,7 +953,21 @@ void KateScrollBar::miniMapPaintEvent(QPaintEvent *e)
+ 
+ void KateScrollBar::normalPaintEvent(QPaintEvent *e)
+ {
+-    QScrollBar::paintEvent(e);
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) {
++        QPainter painter(this);
++        painter.setCompositionMode(QPainter::CompositionMode_Source);
++        painter.fillRect(rect(), QColor(27, 43, 55, 145));
++        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
++        QStyleOptionSlider option;
++        initStyleOption(&option);
++        const QRect handle = style()->subControlRect(QStyle::CC_ScrollBar, &option, QStyle::SC_ScrollBarSlider, this);
++        painter.setRenderHint(QPainter::Antialiasing);
++        painter.setPen(Qt::NoPen);
++        painter.setBrush(QColor(255, 255, 255, 60));
++        painter.drawRoundedRect(handle, 4, 4);
++    } else {
++        QScrollBar::paintEvent(e);
++    }
+ 
+     if (!m_showMarks) {
+         return;

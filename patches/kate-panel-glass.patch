@@ -1,0 +1,179 @@
+diff --git a/apps/lib/katemainwindow.cpp b/apps/lib/katemainwindow.cpp
+index 515e6cb..42dd224 100644
+--- a/apps/lib/katemainwindow.cpp
++++ b/apps/lib/katemainwindow.cpp
+@@ -59,6 +59,12 @@
+ #include <KToolBar>
+ #include <KWindowConfig>
+ #include <KWindowSystem>
++#include <KWindowEffects>
++#include <QPainter>
++#include <QPaintEvent>
++#include <QShowEvent>
++#include <QScrollBar>
++#include <QStyleOptionSlider>
+ #include <KXMLGUIFactory>
+ #include <QStackedLayout>
+ 
+@@ -151,6 +157,46 @@ KateMainWindow::KateMainWindow(const KConfig *sconfig, const QString &sgroup, bo
+     , m_wrapper(new KTextEditor::MainWindow(this))
+     , m_mainWindowCommands(this)
+ {
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) {
++        setAttribute(Qt::WA_TranslucentBackground);
++        QPalette glass = palette();
++        for (auto group : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
++            glass.setColor(group, QPalette::Window, Qt::transparent);
++            glass.setColor(group, QPalette::Base, Qt::transparent);
++            glass.setColor(group, QPalette::AlternateBase, QColor(255, 255, 255, 10));
++        }
++        setPalette(glass);
++        qApp->installEventFilter(this);
++        setStyleSheet(QStringLiteral(
++            "QMainWindow, QToolBar, QMenuBar, QStatusBar, QDockWidget, QAbstractScrollArea { background: transparent; border: none; }"
++            "QPushButton { background: rgba(255,255,255,12); border: 1px solid rgba(255,255,255,40); border-radius: 6px; padding: 5px 10px; }"
++            "QPushButton:hover { background: rgba(255,255,255,28); border-color: rgba(255,255,255,80); }"
++            "QPushButton:pressed { background: rgba(61,174,233,45); border-color: rgba(61,174,233,160); }"
++            "QPushButton:focus { border-color: rgba(61,174,233,180); }"
++            "QPushButton:disabled { background: rgba(255,255,255,5); color: rgba(255,255,255,85); border-color: rgba(255,255,255,15); }"
++            "QPushButton#buttonClearRecentFiles { padding: 5px; }"
++            "QPushButton#buttonClose { background: transparent; border: none; padding: 0px; }"
++            "QPushButton#buttonClose:hover { background: rgba(255,255,255,28); }"
++            "QAbstractItemView { background: transparent; alternate-background-color: rgba(255,255,255,10); }"
++            "QScrollBar { background: none; border: none; }"
++            "QScrollBar:vertical { width: 10px; } QScrollBar:horizontal { height: 10px; }"
++            "QScrollBar::handle { background: rgba(255,255,255,60); border-radius: 4px; min-width: 10px; min-height: 10px; }"
++            "QScrollBar::add-page, QScrollBar::sub-page, QScrollBar::add-line, QScrollBar::sub-line { background: none; border: none; }"
++            "QScrollBar::add-line, QScrollBar::sub-line { width: 0px; height: 0px; }"
++            "QAbstractScrollArea::corner { background: none; border: none; }"
++            "QToolBar::separator { background: transparent; }"
++            "QLineEdit { background: rgba(255,255,255,12); border: 1px solid rgba(255,255,255,40); border-radius: 4px; padding: 4px; }"
++            "QLineEdit:focus { border-color: rgba(61,174,233,180); }"
++            "QTabBar::tab { background: transparent; border: none; padding: 5px 10px; }"
++            "QTabBar::tab:selected { background: rgba(255,255,255,12); border-bottom: 2px solid rgba(61,174,233,160); }"
++            "QTabBar::tab:hover { background: rgba(255,255,255,20); }"
++            "QTabWidget::pane { background: transparent; border: none; }"
++            "QSplitter::handle { background: transparent; }"
++            "QToolButton { background: transparent; border: none; border-radius: 4px; padding: 4px; }"
++            "QToolButton:hover, QToolButton:checked { background: rgba(255,255,255,20); }"
++            "QHeaderView, QHeaderView::section { background: transparent; border: none; }"
++            "QMainWindow::separator { background: transparent; width: 4px; height: 4px; }"));
++    }
+     /**
+      * we don't want any flicker here
+      */
+@@ -243,6 +289,52 @@ KateMainWindow::KateMainWindow(const KConfig *sconfig, const QString &sgroup, bo
+     }
+ }
+ 
++bool KateMainWindow::eventFilter(QObject *object, QEvent *event)
++{
++    auto *bar = qobject_cast<QScrollBar *>(object);
++    // Editor minimaps keep their own painting and bookmark behavior.
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS") && event->type() == QEvent::Paint
++        && bar && bar->window() == this && !bar->inherits("KateScrollBar")) {
++        QPainter painter(bar);
++        painter.setCompositionMode(QPainter::CompositionMode_Source);
++        painter.fillRect(bar->rect(), QColor(27, 43, 55, 145));
++        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
++        QStyleOptionSlider option;
++        option.initFrom(bar);
++        option.orientation = bar->orientation();
++        option.minimum = bar->minimum();
++        option.maximum = bar->maximum();
++        option.sliderPosition = bar->sliderPosition();
++        option.sliderValue = bar->value();
++        option.singleStep = bar->singleStep();
++        option.pageStep = bar->pageStep();
++        if (option.minimum != option.maximum) {
++            const QRect handle = bar->style()->subControlRect(QStyle::CC_ScrollBar, &option, QStyle::SC_ScrollBarSlider, bar);
++            painter.setRenderHint(QPainter::Antialiasing);
++            painter.setPen(Qt::NoPen);
++            painter.setBrush(QColor(255, 255, 255, 60));
++            painter.drawRoundedRect(handle, 4, 4);
++        }
++        return true;
++    }
++    return KateMDI::MainWindow::eventFilter(object, event);
++}
++
++void KateMainWindow::paintEvent(QPaintEvent *event)
++{
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) {
++        QPainter painter(this);
++        painter.fillRect(event->rect(), QColor(27, 43, 55, 145));
++    }
++    KateMDI::MainWindow::paintEvent(event);
++}
++
++void KateMainWindow::showEvent(QShowEvent *event)
++{
++    KateMDI::MainWindow::showEvent(event);
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) KWindowEffects::enableBlurBehind(windowHandle(), true);
++}
++
+ KateMainWindow::~KateMainWindow()
+ {
+     // first, save our fallback window size ;)
+diff --git a/apps/lib/katemainwindow.h b/apps/lib/katemainwindow.h
+index 21c6ac0..bfd6afd 100644
+--- a/apps/lib/katemainwindow.h
++++ b/apps/lib/katemainwindow.h
+@@ -703,6 +703,9 @@ private:
+     const MainWindowCommands m_mainWindowCommands;
+ 
+ protected:
++    bool eventFilter(QObject *object, QEvent *event) override;
++    void paintEvent(QPaintEvent *event) override;
++    void showEvent(QShowEvent *event) override;
+     bool event(QEvent *e) override;
+     void mousePressEvent(QMouseEvent *e) override;
+ };
+diff --git a/apps/lib/katemdi.cpp b/apps/lib/katemdi.cpp
+index 7b5534b..b770f09 100644
+--- a/apps/lib/katemdi.cpp
++++ b/apps/lib/katemdi.cpp
+@@ -1623,7 +1623,7 @@ MainWindow::MainWindow(QWidget *parent)
+ 
+     auto separator = new QFrame(this);
+     separator->setFrameShape(QFrame::HLine);
+-    separator->setFixedHeight(1);
++    separator->setFixedHeight(qEnvironmentVariableIsSet("KATE_PANEL_GLASS") ? 0 : 1);
+     separator->setEnabled(false);
+     toplevelVBox->addWidget(separator);
+ 
+diff --git a/apps/lib/kateoutputview.cpp b/apps/lib/kateoutputview.cpp
+index ede2ab6..007ff50 100644
+--- a/apps/lib/kateoutputview.cpp
++++ b/apps/lib/kateoutputview.cpp
+@@ -281,7 +281,8 @@ void KateOutputView::readConfig()
+     // use editor fonts
+     const auto theme = KTextEditor::Editor::instance()->theme();
+     auto pal = m_textEdit->palette();
+-    pal.setColor(QPalette::Base, QColor::fromRgba(theme.editorColor(KSyntaxHighlighting::Theme::BackgroundColor)));
++    pal.setColor(QPalette::Base, qEnvironmentVariableIsSet("KATE_PANEL_GLASS") ? QColor(Qt::transparent)
++        : QColor::fromRgba(theme.editorColor(KSyntaxHighlighting::Theme::BackgroundColor)));
+     pal.setColor(QPalette::Highlight, QColor::fromRgba(theme.editorColor(KSyntaxHighlighting::Theme::TextSelection)));
+     pal.setColor(QPalette::Text, QColor::fromRgba(theme.textColor(KSyntaxHighlighting::Theme::Normal)));
+     m_textEdit->setPalette(pal);
+diff --git a/apps/lib/kateviewmanager.cpp b/apps/lib/kateviewmanager.cpp
+index 2a3f3e3..5bb409b 100644
+--- a/apps/lib/kateviewmanager.cpp
++++ b/apps/lib/kateviewmanager.cpp
+@@ -755,6 +755,16 @@ KTextEditor::View *KateViewManager::createView(KTextEditor::Document *doc, KateV
+      * pass the view the correct main window
+      */
+     KTextEditor::View *view = (vs ? vs : activeViewSpace())->createView(doc);
++    if (qEnvironmentVariableIsSet("KATE_PANEL_GLASS")) {
++        view->setConfigValue(QStringLiteral("theme"), QStringLiteral("Panel Glass"));
++        view->setConfigValue(QStringLiteral("background-color"), QColor(Qt::transparent));
++        view->setConfigValue(QStringLiteral("icon-border-color"), QColor(Qt::transparent));
++        for (auto *widget : view->findChildren<QWidget *>()) {
++            widget->setAttribute(Qt::WA_OpaquePaintEvent, false);
++            widget->setAutoFillBackground(false);
++        }
++    }
++
+ 
+     /**
+      * remember this view, active == false, min age set
