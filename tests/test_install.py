@@ -105,7 +105,7 @@ class InstallationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'new user'
             bundle = Path(tmp) / 'bundle'
-            for name in ['bin/kate', 'lib/libkateprivate.so.26.08.2', 'lib/libKF6TextEditor.so.6']:
+            for name in ['bin/kate', 'bin/kwrite', 'lib/libkateprivate.so.26.08.2', 'lib/libKF6TextEditor.so.6']:
                 target = bundle / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(b'bundle fixture')
@@ -123,12 +123,17 @@ class InstallationTests(unittest.TestCase):
             self.assertNotIn('DBusActivatable=true', desktop.read_text())
             self.assertTrue((home / '.local/opt/kate-glass/lib/libKF6TextEditor.so.6').is_file())
             self.assertEqual(json.loads(theme.read_text())['metadata']['name'], 'Panel Glass')
+            kwrite = home / '.local/share/applications/org.kde.kwrite.desktop'
+            self.assertIn(str(home / '.local/bin/kwrite-glass'), kwrite.read_text())
+            self.assertNotIn('--new', (home / '.local/bin/kwrite-glass').read_text())
             backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
             subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
             self.assertEqual(desktop.read_text(), 'previous content')
             self.assertEqual(theme.read_text(), 'previous content')
             self.assertFalse((home / '.local/opt/kate-glass').exists())
             self.assertFalse((home / '.local/bin/kate-glass').exists())
+            self.assertFalse(kwrite.exists())
+            self.assertFalse((home / '.local/bin/kwrite-glass').exists())
 
     def test_kate_rejects_incomplete_bundle_without_writes(self):
         with tempfile.TemporaryDirectory() as tmp:

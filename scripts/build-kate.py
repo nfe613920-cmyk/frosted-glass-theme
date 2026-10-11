@@ -29,7 +29,8 @@ def build_project(project, version, patch_name, target):
         run('git', '-C', source, 'apply', '--check', patch)
         run('git', '-C', source, 'apply', patch)
     run('cmake', '-S', source, '-B', build, '-DBUILD_TESTING=OFF', '-DCMAKE_BUILD_TYPE=Release')
-    run('cmake', '--build', build, '--target', target, '-j', '4')
+    targets = [target] if isinstance(target, str) else target
+    run('cmake', '--build', build, '--target', *targets, '-j', '4')
     return build / 'bin'
 
 
@@ -44,13 +45,14 @@ def main():
         if not re.fullmatch(r'\d+\.\d+\.\d+', version):
             parser.error('Expected numeric major.minor.patch versions')
     editor_bin = build_project('ktexteditor', editor, 'ktexteditor-panel-glass.patch', 'KF6TextEditor')
-    kate_bin = build_project('kate', kate, 'kate-panel-glass.patch', 'kate-bin')
+    kate_bin = build_project('kate', kate, 'kate-panel-glass.patch', ['kate-bin', 'kwrite'])
     bundle = ROOT / 'build' / ('kate-bundle-' + kate)
     if bundle.exists():
         shutil.rmtree(bundle)
     (bundle / 'bin').mkdir(parents=True)
     (bundle / 'lib').mkdir()
     shutil.copy2(kate_bin / 'kate', bundle / 'bin/kate')
+    shutil.copy2(kate_bin / 'kwrite', bundle / 'bin/kwrite')
     shutil.copy2(kate_bin / ('libkateprivate.so.' + kate), bundle / 'lib' / ('libkateprivate.so.' + kate))
     shutil.copy2(editor_bin / 'libKF6TextEditor.so.6', bundle / 'lib/libKF6TextEditor.so.6')
     print('Kate bundle ready: ' + str(bundle))

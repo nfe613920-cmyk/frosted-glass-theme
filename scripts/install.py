@@ -158,6 +158,27 @@ def install_kate(home, bundle, copy, write):
     write(home / '.local/share/applications/org.kde.kate.desktop', '\n'.join(lines) + '\n')
 
 
+def install_kwrite(home, bundle, copy, write):
+    copy(bundle, home / '.local/opt/kate-glass')
+    copy(ROOT / 'assets/editor-themes/PanelGlass.theme', home / '.local/share/org.kde.syntax-highlighting/themes/PanelGlass.theme')
+    launcher = home / '.local/bin/kwrite-glass'
+    write(launcher, (ROOT / 'scripts/kwrite-glass.py').read_text(), 0o755)
+    desktop = Path('/usr/share/applications/org.kde.kwrite.desktop')
+    text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=KWrite\nIcon=kwrite\nExec=kwrite %U\n'
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    lines = []
+    for line in text.splitlines():
+        if line.startswith('Exec='):
+            command = line[5:].split(maxsplit=1)
+            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+        if line.startswith('TryExec='):
+            line = 'TryExec=kwrite'
+        if line.startswith('DBusActivatable='):
+            line = 'DBusActivatable=false'
+        lines.append(line)
+    write(home / '.local/share/applications/org.kde.kwrite.desktop', '\n'.join(lines) + '\n')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
@@ -287,6 +308,8 @@ def main():
             install_ark(home, args.ark_bundle, copy, write)
         if args.kate_bundle:
             install_kate(home, args.kate_bundle, copy, write)
+            if (args.kate_bundle / 'bin/kwrite').is_file():
+                install_kwrite(home, args.kate_bundle, copy, write)
         if args.panels:
             for name in ['plasma-org.kde.plasma.desktop-appletsrc', 'plasmashellrc']:
                 backup.save(home / '.config' / name)

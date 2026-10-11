@@ -2,7 +2,7 @@
 
 保存 2026-10-10 的 KDE Plasma 毛玻璃桌面效果，重装系统后可按新用户名恢复。
 
-包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark、Kate 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
+包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark、Kate、KWrite 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
 
 ## 主题参数
 
@@ -165,3 +165,7 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 用户目录中的 `~/.local/bin/kate-glass` 为新实例设置 `KATE_PANEL_GLASS=1` 并加载 `~/.local/opt/kate-glass/lib`，应用菜单和已有 Kate 文件关联使用这一入口。`/usr/bin/kate` 和其他使用 KTextEditor 的应用保持系统版本。安装不会把 Kate 设成所有文本文件的默认应用。
 
 安装器备份 Kate 程序、启动项和编辑主题。升级 Kate、KTextEditor、Breeze 或 KDE/Qt 后重新构建匹配版本并安装。当前验证包括语法高亮显示、插入、撤销、重做、UTF-8 保存回读、分栏和欢迎页。
+
+## KWrite 毛玻璃
+
+`build-kate.py` 同时构建 KWrite。安装完整 Kate bundle 时自动安装 `kwrite-glass` 启动器和对应应用菜单项，与 Kate 共用私有库、编辑主题与原生毛玻璃标题栏。保留关闭按钮、工具栏和文件参数，不修改文本文件默认关联。KWrite 没有 Kate 的 `--new` 选项，启动器保留其原生启动方式。

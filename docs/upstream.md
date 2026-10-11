@@ -26,3 +26,5 @@ Ark 补丁基于 [Ark v26.08.2](https://github.com/KDE/ark/tree/v26.08.2)，基�
 Kate 补丁基于 [Kate v26.08.2](https://github.com/KDE/kate/tree/v26.08.2)，基准提交 `2b6465a886b9d3bfc6eab25065c14ffe025e6ac3`。主窗口和视图管理文件保留 LGPL-2.0-only，MDI 文件保留 LGPL-2.0-or-later。KTextEditor 滚动条补丁基于 [v6.30.0](https://github.com/KDE/ktexteditor/tree/v6.30.0)，保留 LGPL-2.0-only 及原作者声明。只在 `KATE_PANEL_GLASS` 启用时进入新绘制分支。
 
 `PanelGlass.theme` 基于 [KSyntaxHighlighting v6.30.0 的 Breeze Dark](https://github.com/KDE/syntax-highlighting/blob/v6.30.0/data/themes/breeze-dark.theme)，保留 Volker Krause、Dominik Haumann 和 MIT 许可元数据。
+
+KWrite 使用同一 Kate v26.08.2 源码树及主窗口库，无新增上游来源。窗口装饰额外精确匹配 `kwrite` / `org.kde.kwrite`。
