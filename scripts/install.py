@@ -117,6 +117,26 @@ def install_dolphin(home, bundle, copy, write):
     write(home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service', service)
 
 
+def install_ark(home, bundle, copy, write):
+    copy(bundle, home / '.local/opt/ark-glass')
+    launcher = home / '.local/bin/ark-glass'
+    write(launcher, (ROOT / 'scripts/ark-glass.py').read_text(), 0o755)
+    desktop = Path('/usr/share/applications/org.kde.ark.desktop')
+    text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Ark\nIcon=ark\nExec=ark %U\n'
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    lines = []
+    for line in text.splitlines():
+        if line.startswith('Exec='):
+            command = line[5:].split(maxsplit=1)
+            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+        if line.startswith('TryExec='):
+            line = 'TryExec=ark'
+        if line.startswith('DBusActivatable='):
+            line = 'DBusActivatable=false'
+        lines.append(line)
+    write(home / '.local/share/applications/org.kde.ark.desktop', '\n'.join(lines) + '\n')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
@@ -127,6 +147,7 @@ def main():
     parser.add_argument('--no-live', action='store_true', help='Skip desktop DBus calls')
     parser.add_argument('--decoration', type=Path, help='Built Breeze decoration plugin .so')
     parser.add_argument('--dolphin-bundle', type=Path, help='Optional bundle made by build-dolphin.py; requires the matching decoration')
+    parser.add_argument('--ark-bundle', type=Path, help='Optional bundle made by build-ark.py; requires the matching decoration')
     parser.add_argument('--panels', action='store_true', help='Replace all existing panels with the saved top panel and bottom dock')
     args = parser.parse_args()
     home = args.home.expanduser().resolve()
@@ -146,6 +167,11 @@ def main():
             parser.error('--dolphin-bundle requires --decoration for matching titlebar and corners')
         if not all((args.dolphin_bundle / name).is_file() for name in ['bin/dolphin', 'lib/libdolphinprivate.so.6', 'lib/libdolphinvcs.so.6']):
             parser.error('Dolphin bundle is incomplete; build it first')
+    if args.ark_bundle:
+        if not args.decoration:
+            parser.error('--ark-bundle requires --decoration for matching titlebar and corners')
+        if not (args.ark_bundle / 'bin/ark').is_file() or not list((args.ark_bundle / 'lib').glob('libkerfuffle.so.*')):
+            parser.error('Ark bundle is incomplete; build it first')
     if args.panels and not args.dry_run:
         subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell'], check=True, stdout=subprocess.DEVNULL)
     plan = [('Install Plasma style and Dock separator', '.local/share/plasma'),
@@ -157,6 +183,8 @@ def main():
         plan.append(('Install and select matching native Konsole glass decoration', '.local/lib/qt6/plugins/org.kde.kdecoration3'))
     if args.dolphin_bundle:
         plan.append(('Install opt-in Dolphin glass build and launcher', '.local/opt/dolphin-glass'))
+    if args.ark_bundle:
+        plan.append(('Install opt-in Ark glass build and launcher', '.local/opt/ark-glass'))
     if args.panels:
         plan.append(('Replace existing panels with saved layout', '.config/plasma-org.kde.plasma.desktop-appletsrc'))
     for message, path in plan:
@@ -226,6 +254,8 @@ def main():
         write(home / '.local/share/kglobalaccel/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
         if args.dolphin_bundle:
             install_dolphin(home, args.dolphin_bundle, copy, write)
+        if args.ark_bundle:
+            install_ark(home, args.ark_bundle, copy, write)
         if args.panels:
             for name in ['plasma-org.kde.plasma.desktop-appletsrc', 'plasmashellrc']:
                 backup.save(home / '.config' / name)

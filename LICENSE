@@ -10,7 +10,7 @@ This repository contains components under multiple licenses:
   source licensing and copyright notices continue to apply to the modified
   files: GPL-2.0-or-later (decoration sources), and the applicable upstream
   licenses for build files. See LICENSES/GPL-2.0-or-later.txt.
-* The Dolphin source patch remains under GPL-2.0-or-later, retaining KDE
+* The Dolphin and Ark source patches remain under GPL-2.0-or-later, retaining KDE
   source attribution. See LICENSES/GPL-2.0-or-later.txt.
 * The Arch Linux application-menu icon is from official artwork 1.6 by
   Thayer Williams, under CC BY-NC-SA-3.0. See LICENSES/CC-BY-NC-SA-3.0.txt

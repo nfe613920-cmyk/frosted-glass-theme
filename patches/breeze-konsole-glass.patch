@@ -12,23 +12,24 @@ index 876430a..af07104 100644
  
  target_link_libraries(breezedecoration
 diff --git a/kdecoration/breezedecoration.cpp b/kdecoration/breezedecoration.cpp
-index 48afd7b..8702716 100644
+index 48afd7b..4249d47 100644
 --- a/kdecoration/breezedecoration.cpp
 +++ b/kdecoration/breezedecoration.cpp
-@@ -180,6 +180,12 @@ QColor Decoration::fontColor() const
+@@ -180,6 +180,13 @@ QColor Decoration::fontColor() const
  }
  
  //________________________________________________________________
 +bool Decoration::isPanelGlass() const
 +{
 +    const auto klass = window()->windowClass().toLower();
-+    return klass.contains(QStringLiteral("konsole")) || klass.contains(QStringLiteral("dolphin"));
++    return klass.contains(QStringLiteral("konsole")) || klass.contains(QStringLiteral("dolphin"))
++        || klass.split(QLatin1Char(' ')).contains(QStringLiteral("ark")) || klass.contains(QStringLiteral("org.kde.ark"));
 +}
 +
  bool Decoration::init()
  {
      // active state change animation
-@@ -242,8 +248,11 @@ bool Decoration::init()
+@@ -242,8 +249,11 @@ bool Decoration::init()
      connect(this, &KDecoration3::Decoration::bordersChanged, this, &Decoration::updateTitleBar);
      connect(window(), &KDecoration3::DecoratedWindow::adjacentScreenEdgesChanged, this, &Decoration::updateTitleBar);
      connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::updateTitleBar);
@@ -41,7 +42,7 @@ index 48afd7b..8702716 100644
  
      connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &Decoration::updateButtonsGeometry);
      connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, &Decoration::updateButtonsGeometry);
-@@ -298,6 +307,7 @@ void Decoration::updateAnimationState()
+@@ -298,6 +308,7 @@ void Decoration::updateAnimationState()
  //________________________________________________________________
  qreal Decoration::borderSize(bool bottom, qreal scale) const
  {
@@ -49,7 +50,7 @@ index 48afd7b..8702716 100644
      const qreal pixelSize = KDecoration3::pixelSize(scale);
      const qreal baseSize = std::max<qreal>(pixelSize, KDecoration3::snapToPixelGrid(settings()->smallSpacing(), scale));
      if (m_internalSettings && (m_internalSettings->mask() & BorderSize)) {
-@@ -416,6 +426,9 @@ QMarginsF Decoration::bordersFor(qreal scale) const
+@@ -416,6 +427,9 @@ QMarginsF Decoration::bordersFor(qreal scale) const
  void Decoration::recalculateBorders()
  {
      setBorders(bordersFor(window()->nextScale()));
@@ -59,7 +60,7 @@ index 48afd7b..8702716 100644
  
      // extended sizes
      const qreal extSize = KDecoration3::snapToPixelGrid(settings()->largeSpacing(), window()->nextScale());
-@@ -439,7 +452,7 @@ void Decoration::recalculateBorders()
+@@ -439,7 +453,7 @@ void Decoration::recalculateBorders()
      qreal bottomLeftRadius = 0;
      qreal bottomRightRadius = 0;
      if (m_internalSettings->roundedCorners()) {
@@ -68,7 +69,7 @@ index 48afd7b..8702716 100644
              topLeftRightRadius = m_scaledCornerRadius;
          }
  
-@@ -567,6 +580,11 @@ void Decoration::updateButtonsGeometry()
+@@ -567,6 +581,11 @@ void Decoration::updateButtonsGeometry()
  //________________________________________________________________
  void Decoration::paint(QPainter *painter, const QRectF &repaintRegion)
  {
@@ -80,7 +81,7 @@ index 48afd7b..8702716 100644
      // TODO: optimize based on repaintRegion
      auto s = settings();
      // paint background
-@@ -618,6 +636,9 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -618,6 +637,9 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
      QRectF rect(QPointF(0, 0), QSizeF(size().width(), borderTop()));
      QBrush frontBrush;
      QBrush backBrush(this->titleBarColor());
@@ -90,7 +91,7 @@ index 48afd7b..8702716 100644
  
      if (!rect.intersects(repaintRegion)) {
          return;
-@@ -627,7 +648,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -627,7 +649,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
      painter->setPen(Qt::NoPen);
  
      // render a linear gradient on title area
@@ -99,7 +100,7 @@ index 48afd7b..8702716 100644
          QLinearGradient gradient(0, 0, 0, rect.height());
          gradient.setColorAt(0.0, titleBarColor().lighter(120));
          gradient.setColorAt(0.8, titleBarColor());
-@@ -635,7 +656,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -635,7 +657,7 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
          frontBrush = gradient;
  
      } else {
@@ -108,7 +109,7 @@ index 48afd7b..8702716 100644
  
          painter->setBrush(titleBarColor());
      }
-@@ -657,6 +678,12 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
+@@ -657,6 +679,12 @@ void Decoration::paintTitleBar(QPainter *painter, const QRectF &repaintRegion)
          painter->setClipRect(rect, Qt::IntersectClip);
  
          auto drawThe = [this, painter](const QRectF &r) {
@@ -121,7 +122,7 @@ index 48afd7b..8702716 100644
              painter->drawRoundedRect(r, m_scaledCornerRadius, m_scaledCornerRadius);
              // remove the rounding on the bottom
              painter->drawRect(QRectF(r.bottomLeft() - QPointF(0, m_scaledCornerRadius), r.bottomRight()));
-@@ -765,6 +792,10 @@ QPair<QRectF, Qt::Alignment> Decoration::captionRect() const
+@@ -765,6 +793,10 @@ QPair<QRectF, Qt::Alignment> Decoration::captionRect() const
  void Decoration::updateShadow()
  {
      auto s = settings();
@@ -132,7 +133,7 @@ index 48afd7b..8702716 100644
  
      // Animated case, no cached shadow object
      if ((m_shadowAnimation->state() == QAbstractAnimation::Running) && (m_shadowOpacity != 0.0) && (m_shadowOpacity != 1.0)) {
-@@ -854,7 +885,7 @@ void Decoration::setScaledCornerRadius()
+@@ -854,7 +886,7 @@ void Decoration::setScaledCornerRadius()
      // On X11, the smallSpacing value is used for scaling.
      // On Wayland, this value has constant factor of 2.
      // Removing it will break radius scaling on X11.

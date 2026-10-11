@@ -1,0 +1,137 @@
+diff --git a/app/mainwindow.cpp b/app/mainwindow.cpp
+index 11f85cc..71c166f 100644
+--- a/app/mainwindow.cpp
++++ b/app/mainwindow.cpp
+@@ -28,6 +28,13 @@
+ #include <KStandardAction>
+ #include <KToolBar>
+ #include <KWindowSystem>
++#include <KWindowEffects>
++#include <QPainter>
++#include <QPaintEvent>
++#include <QShowEvent>
++#include <QScrollBar>
++#include <QAbstractScrollArea>
++#include <QStyleOptionSlider>
+ #include <KXMLGUIFactory>
+ 
+ #include <QApplication>
+@@ -94,15 +101,105 @@ private:
+     QWidget *m_dumbTitleWidget = nullptr;
+ };
+ 
++// Keep native scrolling and drag behavior; paint only the translucent thumb.
++class GlassScrollBar : public QScrollBar
++{
++public:
++    explicit GlassScrollBar(Qt::Orientation orientation, QWidget *parent)
++        : QScrollBar(orientation, parent)
++    {
++        setAttribute(Qt::WA_OpaquePaintEvent, false);
++        setAutoFillBackground(false);
++    }
++protected:
++    void paintEvent(QPaintEvent *) override
++    {
++        if (minimum() == maximum()) return;
++        QStyleOptionSlider option;
++        initStyleOption(&option);
++        const QRect handle = style()->subControlRect(QStyle::CC_ScrollBar, &option, QStyle::SC_ScrollBarSlider, this);
++        QPainter painter(this);
++        // Replace the backing-store region, rather than stacking another glass layer.
++        painter.setCompositionMode(QPainter::CompositionMode_Source);
++        painter.fillRect(rect(), QColor(27, 43, 55, 145));
++        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
++        painter.setRenderHint(QPainter::Antialiasing);
++        painter.setPen(Qt::NoPen);
++        painter.setBrush(QColor(255, 255, 255, 60));
++        painter.drawRoundedRect(handle, 4, 4);
++    }
++};
++
+ MainWindow::MainWindow(QWidget *)
+     : KParts::MainWindow()
+     , m_windowContents(new QStackedWidget(this))
+ {
++    if (qEnvironmentVariableIsSet("ARK_PANEL_GLASS")) {
++        setAttribute(Qt::WA_TranslucentBackground);
++        QPalette glass = palette();
++        for (auto group : {QPalette::Active, QPalette::Inactive, QPalette::Disabled}) {
++            glass.setColor(group, QPalette::Window, Qt::transparent);
++            glass.setColor(group, QPalette::Base, Qt::transparent);
++            glass.setColor(group, QPalette::AlternateBase, QColor(255, 255, 255, 10));
++        }
++        setPalette(glass);
++        setStyleSheet(QStringLiteral(
++            "QMainWindow, QToolBar, QMenuBar, QStatusBar, QDockWidget, QAbstractScrollArea { background: transparent; border: none; }"
++            "QPushButton { background: rgba(255,255,255,12); border: 1px solid rgba(255,255,255,40); border-radius: 6px; padding: 5px 10px; }"
++            "QPushButton:hover { background: rgba(255,255,255,28); border-color: rgba(255,255,255,80); }"
++            "QPushButton:pressed { background: rgba(61,174,233,45); border-color: rgba(61,174,233,160); }"
++            "QPushButton:focus { border-color: rgba(61,174,233,180); }"
++            "QPushButton:disabled { background: rgba(255,255,255,5); color: rgba(255,255,255,85); border-color: rgba(255,255,255,15); }"
++            "QPushButton#buttonClearRecentFiles { padding: 5px; }"
++            "QPushButton#buttonClose { background: transparent; border: none; padding: 0px; }"
++            "QPushButton#buttonClose:hover { background: rgba(255,255,255,28); }"
++            "QAbstractItemView { background: transparent; alternate-background-color: rgba(255,255,255,10); }"
++            "QScrollBar { background: none; border: none; }"
++            "QScrollBar:vertical { width: 10px; } QScrollBar:horizontal { height: 10px; }"
++            "QScrollBar::handle { background: rgba(255,255,255,60); border-radius: 4px; min-width: 10px; min-height: 10px; }"
++            "QScrollBar::add-page, QScrollBar::sub-page, QScrollBar::add-line, QScrollBar::sub-line { background: none; border: none; }"
++            "QScrollBar::add-line, QScrollBar::sub-line { width: 0px; height: 0px; }"
++            "QAbstractScrollArea::corner { background: none; border: none; }"
++            "QToolBar::separator { background: transparent; }"
++            "QHeaderView, QHeaderView::section { background: transparent; border: none; }"
++            "QMainWindow::separator { background: transparent; width: 4px; height: 4px; }"));
++    }
+     setAcceptDrops(true);
+     // Ark doesn't provide a fullscreen mode; remove the corresponding window button
+     setWindowFlags(windowFlags() & ~Qt::WindowFullscreenButtonHint);
+ }
+ 
++void MainWindow::paintEvent(QPaintEvent *event)
++{
++    if (qEnvironmentVariableIsSet("ARK_PANEL_GLASS")) {
++        QPainter painter(this);
++        painter.fillRect(event->rect(), QColor(27, 43, 55, 145));
++    }
++    KParts::MainWindow::paintEvent(event);
++}
++
++void MainWindow::showEvent(QShowEvent *event)
++{
++    KParts::MainWindow::showEvent(event);
++    if (qEnvironmentVariableIsSet("ARK_PANEL_GLASS")) {
++        KWindowEffects::enableBlurBehind(windowHandle(), true);
++        for (auto *area : findChildren<QAbstractScrollArea *>()) {
++            if (!dynamic_cast<GlassScrollBar *>(area->verticalScrollBar()))
++                area->setVerticalScrollBar(new GlassScrollBar(Qt::Vertical, area));
++            if (!dynamic_cast<GlassScrollBar *>(area->horizontalScrollBar()))
++                area->setHorizontalScrollBar(new GlassScrollBar(Qt::Horizontal, area));
++        }
++        for (auto *widget : findChildren<QWidget *>()) {
++            if (qobject_cast<QScrollBar *>(widget) || widget->objectName().startsWith(QStringLiteral("qt_scrollarea_"))) {
++                widget->ensurePolished();
++                widget->setAttribute(Qt::WA_OpaquePaintEvent, false);
++                widget->setAttribute(Qt::WA_StyledBackground, false);
++                widget->setAutoFillBackground(false);
++            }
++        }
++    }
++}
++
+ MainWindow::~MainWindow()
+ {
+     guiFactory()->removeClient(m_part);
+diff --git a/app/mainwindow.h b/app/mainwindow.h
+index b81a9d0..d198cb8 100644
+--- a/app/mainwindow.h
++++ b/app/mainwindow.h
+@@ -44,6 +44,8 @@ public Q_SLOTS:
+     void hideWelcomeScreen();
+ 
+ protected:
++    void paintEvent(QPaintEvent *event) override;
++    void showEvent(QShowEvent *event) override;
+     void closeEvent(QCloseEvent *event) override;
+     QSize sizeHint() const override;
+ 

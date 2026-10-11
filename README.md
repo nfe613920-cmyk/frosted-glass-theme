@@ -2,7 +2,7 @@
 
 保存 2026-10-10 的 KDE Plasma 毛玻璃桌面效果，重装系统后可按新用户名恢复。
 
-包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
+包括顶部悬浮面板、应用菜单、底部 Dock、自定义 Dock 分隔器，以及 Konsole、Dolphin、Ark 的整块毛玻璃窗口。标题栏、工具栏和终端保持连续背景，保留原生窗口按钮，去掉分隔线、实体侧框和窗口阴影，并让模糊背景与圆角一致。
 
 ## 主题参数
 
@@ -21,7 +21,7 @@
 
 仓库默认为私有；重装后先配置自己的 GitHub 认证，再克隆仓库。
 
-已在 Arch Linux、Plasma/Breeze 6.7.5、Qt 6.12.0、Konsole/Dolphin 26.08.2 上构建和使用。其他发行版需安装对应的 KDE/Qt 开发包。
+已在 Arch Linux、Plasma/Breeze 6.7.5、Qt 6.12.0、Konsole/Dolphin/Ark 26.08.2 上构建和使用。其他发行版需安装对应的 KDE/Qt 开发包。
 
 ```sh
 sudo pacman -S --needed git python cmake base-devel extra-cmake-modules qt6-base qt6-svg breeze kdecoration kcolorscheme kconfig kguiaddons ki18n kiconthemes kwindowsystem frameworkintegration kcmutils konsole
@@ -75,7 +75,7 @@ python3 scripts/install.py --restore ~/.local/state/frosted-glass-theme/backups/
 ~/.local/bin/konsole-glass --separate
 ```
 
-关闭、最大化、最小化按钮依然由原生 Breeze 装饰提供。装饰补丁仅在窗口类名包含 `konsole` 时改变绘制，其他应用沿用同版本 Breeze 的原行为。升级 Breeze、KWin 或 Qt 后，请重新构建并安装匹配当前系统的插件。
+关闭、最大化、最小化按钮依然由原生 Breeze 装饰提供。装饰补丁针对 Konsole、Dolphin 和 Ark 的窗口类名改变绘制，其他应用沿用同版本 Breeze 的原行为。升级 Breeze、KWin 或 Qt 后，请重新构建并安装匹配当前系统的插件。
 
 ## NetFloat
 
@@ -86,7 +86,7 @@ python3 scripts/install.py --restore ~/.local/state/frosted-glass-theme/backups/
 - `assets/plasma/`：面板和应用菜单样式、自定义 Dock 分隔器。
 - `assets/konsole/`、`assets/color-schemes/`：终端配色、配置和工具栏样式。
 - `layout/panels.js`：可选的面板布局重建脚本，使用当前会话分配的组件 ID。
-- `patches/`：Konsole 专用 Breeze 窗口装饰补丁。
+- `patches/`：共享 Breeze 窗口装饰，以及 Dolphin、Ark 的背景补丁。
 - `scripts/`：构建、安装、备份和恢复。
 - `tests/`：隔离目录中的安装/恢复测试，以及面板脚本模拟测试。
 - `theme.json`：当前参数与已验证的软件版本。
@@ -131,3 +131,19 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 ## 应用菜单图标
 
 2026-10-12 将顶部左侧应用菜单换为 Arch Linux 图标。安装器保存图标，`--panels` 恢复布局时选用 `frosted-arch-white`。图标来自 [Arch Linux 官方 artwork 1.6](https://sources.archlinux.org/other/artwork/archlinux-artwork-1.6.tar.gz)，由 Thayer Williams 绘制，保留官方轮廓，改为与面板一致的纯白色。素材保留上游 CC BY-NC-SA 3.0 许可与 Arch 商标归属，详见 `docs/arch-artwork-authors.txt` 和 `LICENSES/CC-BY-NC-SA-3.0.txt`。
+
+## Ark 整块毛玻璃（可选）
+
+Ark 的标题栏、工具栏、列表表头、侧栏和欢迎页沿用同一块半透明背景。交替行只保留轻微的透明提示，欢迎页按钮使用半透明底色并保留悬停、按下和焦点反馈；窗口按钮和压缩、解压功能保持原生行为，通过 `ARK_PANEL_GLASS=1` 启用。
+
+```sh
+sudo pacman -S --needed ark kparts kio kcrash kwidgetsaddons kitemmodels ktextwidgets libarchive
+python3 scripts/build-ark.py
+python3 scripts/build-decoration.py
+python3 scripts/install.py --dry-run --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --ark-bundle build/ark-bundle-26.08.2
+python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so --ark-bundle build/ark-bundle-26.08.2
+```
+
+使用构建脚本打印的实际路径。可以同时传入 `--dolphin-bundle`；默认不改面板布局。安装器将程序和私有库保存到 `~/.local/opt/ark-glass`，用户应用菜单和压缩包文件关联沿用 `org.kde.ark.desktop`，调用 `~/.local/bin/ark-glass`。命令行也可使用这个启动器，支持 Ark 原有参数；直接执行 `/usr/bin/ark` 仍是发行版程序。
+
+自定义主程序复用系统同版本 Ark 的 KPart 和压缩后端，因此必须与系统 Ark 版本匹配。升级 Ark、Breeze 或 KDE/Qt 后重新构建并安装。安装器自动备份 Ark 启动项和程序目录，可用同一个 `--restore` 恢复；不修改现有压缩包、文件关联首选顺序或 Ark 功能设置。

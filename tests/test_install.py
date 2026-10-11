@@ -76,6 +76,41 @@ class InstallationTests(unittest.TestCase):
             self.assertFalse(shortcut.exists())
             self.assertFalse((home / '.local/opt/dolphin-glass').exists())
 
+    def test_ark_bundle_install_and_restore(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'new user'
+            bundle = Path(tmp) / 'bundle'
+            for name in ['bin/ark', 'lib/libkerfuffle.so.26']:
+                target = bundle / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
+            desktop = home / '.local/share/applications/org.kde.ark.desktop'
+            desktop.parent.mkdir(parents=True)
+            desktop.write_text('previous Ark launcher')
+            cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
+            subprocess.run(cmd + ['--apply', '--decoration', str(plugin), '--ark-bundle', str(bundle)], capture_output=True, check=True)
+            self.assertIn(str(home / '.local/bin/ark-glass'), desktop.read_text())
+            self.assertIn('%U', desktop.read_text())
+            self.assertTrue((home / '.local/opt/ark-glass/lib/libkerfuffle.so.26').is_file())
+            self.assertTrue((home / '.local/bin/ark-glass').stat().st_mode & 0o100)
+            backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
+            subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
+            self.assertEqual(desktop.read_text(), 'previous Ark launcher')
+            self.assertFalse((home / '.local/opt/ark-glass').exists())
+            self.assertFalse((home / '.local/bin/ark-glass').exists())
+
+    def test_ark_rejects_invalid_bundle_without_writes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / 'empty'
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
+            for flags in [[], ['--decoration', str(plugin)]]:
+                result = subprocess.run([sys.executable, str(SCRIPT), '--home', str(home), '--no-live', '--apply', '--ark-bundle', tmp] + flags, capture_output=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(home.exists())
+
     def test_dolphin_rejects_missing_decoration_without_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'empty'
