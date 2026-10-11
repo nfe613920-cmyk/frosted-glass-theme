@@ -152,13 +152,17 @@ class InstallationTests(unittest.TestCase):
             self.assertNotIn('DBusActivatable=true', desktop.read_text())
             shortcut = home / '.local/share/kglobalaccel/org.kde.spectacle.desktop'
             self.assertEqual(shortcut.read_text(), desktop.read_text())
+            auth = home / '.local/share/applications/org.kde.spectacle-glass-capture.desktop'
+            self.assertIn(str(home / '.local/opt/spectacle-glass/bin/spectacle'), auth.read_text())
+            self.assertIn('X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2', auth.read_text())
+            self.assertIn('NoDisplay=true', auth.read_text())
             services = [home / '.local/share/dbus-1/services' / (name + '.service') for name in ['org.kde.Spectacle', 'org.kde.spectacle']]
             for service in services:
                 self.assertIn('--dbus', service.read_text())
                 self.assertNotIn('SystemdService', service.read_text())
             backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
             subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
-            for target in [desktop, shortcut, *services, home / '.local/opt/spectacle-glass', home / '.local/bin/spectacle-glass']:
+            for target in [desktop, shortcut, auth, *services, home / '.local/opt/spectacle-glass', home / '.local/bin/spectacle-glass']:
                 self.assertFalse(target.exists())
 
     def test_kate_rejects_incomplete_bundle_without_writes(self):

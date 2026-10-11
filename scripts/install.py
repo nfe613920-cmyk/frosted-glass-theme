@@ -199,6 +199,14 @@ def install_spectacle(home, bundle, copy, write):
     write(home / '.local/share/applications/org.kde.spectacle.desktop', '\n'.join(lines) + '\n')
 
     write(home / '.local/share/kglobalaccel/org.kde.spectacle.desktop', '\n'.join(lines) + '\n')
+    # KWin authorizes the actual process executable, not its wrapper or app ID.
+    binary = home / '.local/opt/spectacle-glass/bin/spectacle'
+    escaped_binary = str(binary).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    authorization = ('[Desktop Entry]\nType=Application\nName=Spectacle Glass Capture\nNoDisplay=true\n'
+                     'Exec="' + escaped_binary + '"\n'
+                     'X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n')
+    write(home / '.local/share/applications/org.kde.spectacle-glass-capture.desktop', authorization)
+
     for name in ['org.kde.Spectacle', 'org.kde.spectacle']:
         service = '[D-BUS Service]\nName=' + name + '\nExec="' + escaped + '" --dbus\n'
         write(home / '.local/share/dbus-1/services' / (name + '.service'), service)

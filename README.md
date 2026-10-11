@@ -187,3 +187,5 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 安装同步应用菜单、所有桌面动作、全局快捷键 desktop 文件和两个 DBus 激活服务的入口；保留所有原始命令参数。注销后重新登录可刷新会话中已经缓存的快捷键入口，已有旧进程正常退出后新入口才会接管。
 
 已验证后台截图导出、打开现有图片进入标注模式、标注界面显示、设置页、数值输入框箭头与键盘编辑。没有修改截图区域选择覆盖层或视频录制后端。自动检查数值控件可运行 `python3 scripts/check-spectacle-spin.py build/实际补丁源码目录`。
+
+Spectacle 另有隐藏的 `org.kde.spectacle-glass-capture.desktop`，其 Exec 直接指向实际程序并声明截图接口。KWin 根据 `/proc` 中的程序路径查找授权，Python 启动脚本无法代替实际程序。该条目不增加应用菜单图标，卸载恢复时一并删除。
