@@ -14,6 +14,7 @@ APPS = {'systemsettings', 'kinfocenter', 'plasma-discover', 'plasma-systemmonito
 
 def environment(binary, runtime, environ):
     env = dict(environ)
+    env.pop('PANEL_GLASS_POPUPS_ONLY', None)
     env['PANEL_GLASS_HOST'] = str(binary.resolve())
     env['PANEL_GLASS_SCHEME'] = str(runtime / 'PanelGlassTransparent.colors')
     plugin_path = str(runtime / 'plugins')

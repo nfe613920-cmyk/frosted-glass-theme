@@ -12,4 +12,5 @@ bundle = ROOT / 'build/runtime-bundle'
 (bundle / 'plugins/generic').mkdir(parents=True, exist_ok=True)
 shutil.copy2(build / 'plugins/generic/libpanelglass.so', bundle / 'plugins/generic/libpanelglass.so')
 shutil.copy2(ROOT / 'runtime/PanelGlassTransparent.colors', bundle / 'PanelGlassTransparent.colors')
+shutil.copy2(ROOT / 'runtime/popup-launcher.py', bundle / 'popup-launcher.py')
 print('Runtime ready: ' + str(bundle))

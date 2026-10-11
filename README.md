@@ -210,6 +210,8 @@ python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.k
 
 可与 Dolphin、Ark、Kate、Spectacle 的 bundle 选项合并安装；不传 `--panels` 就不重建面板布局。从应用菜单打开即可使用新入口，终端启动时使用 `~/.local/bin/程序名-glass`，例如 `systemsettings-glass`、`plasma-discover-glass`、`fcitx5-config-qt-glass`。旧进程退出后再打开新窗口。升级 Qt、Kirigami、KWin/Breeze 后重新构建两种插件。
 
+弹出菜单、右键菜单和级联子菜单使用同一透明底色、14px 圆角和圆角模糊区域，保留图标、快捷键、勾选项与原生键盘导航。已安装的 Dolphin、Konsole、Ark、Kate、KWrite、Spectacle 启动器会接入仅处理菜单的模式，保持各自主窗口的绘制方式。更新后需正常关闭原有应用进程再打开；已运行的进程不会热加载新插件。
+
 功能检查：
 
 ```sh
@@ -217,6 +219,6 @@ python3 -m unittest discover -s tests -v
 python3 scripts/check-runtime.py
 ```
 
-已验证原生窗口启动、输入、按钮点击、数值编辑、停靠窗口构造、透明背景重复重绘、异步卡片加载及状态反馈；实际检查了系统设置/信息中心、软件中心、监控图表、欢迎中心、表情、菜单、字体查看、文件类型、网络向导、KNewStuff、Fcitx 配置及 Qt 开发工具界面。字体安装没有执行写入；打印配置无可用打印机，打印队列提示 CUPS 未运行；蓝牙发送提示 OBEX 服务不可用，未执行传输或配对。
+已验证原生窗口启动、输入、按钮点击、数值编辑、停靠窗口构造、透明背景重复重绘、菜单圆角透明像素、勾选项和子菜单键盘导航、异步卡片加载及状态反馈；实际检查了系统设置/信息中心、软件中心、监控图表、欢迎中心、表情、菜单、字体查看、文件类型、网络向导、KNewStuff、Fcitx 配置及 Qt 开发工具界面。字体安装没有执行写入；打印配置无可用打印机，打印队列提示 CUPS 未运行；蓝牙发送提示 OBEX 服务不可用，未执行传输或配对。
 
 本次适配保留配色编辑器的颜色预览、字体样张、文档及监控图表内容。不对 Qt Designer 的设计预览、QV4L2/QVidCap 视频画面或 Electron 自绘界面强制应用这套全局控件规则。

@@ -8,6 +8,8 @@
 #include <QDir>
 #include <QEvent>
 #include <QPainter>
+#include <QPainterPath>
+#include <QMenu>
 #include <QQuickWindow>
 #include <QQuickWidget>
 #include <QQuickItem>
@@ -23,7 +25,29 @@
 using Theme = Kirigami::Platform::PlatformTheme;
 
 class GlassRuntime : public QObject {
+    const bool popupsOnly = qEnvironmentVariableIsSet("PANEL_GLASS_POPUPS_ONLY");
     bool widgetsReady = false;
+    void prepareMenu(QMenu *menu) {
+        if (menu->property("_panelGlassMenu").toBool()) return;
+        menu->setProperty("_panelGlassMenu", true);
+        menu->setAttribute(Qt::WA_TranslucentBackground);
+        menu->setAttribute(Qt::WA_OpaquePaintEvent, false);
+        menu->setAutoFillBackground(false);
+        // A local stylesheet also wins over the application's transparent QFrame
+        // rule. Leave native action layout, icons, checks and shortcuts intact.
+        menu->setStyleSheet(menu->styleSheet() + QStringLiteral(
+            "QMenu { background: rgba(27,43,55,145); border: none; border-radius: 14px; padding: 6px; }"
+            "QMenu::item:selected { background: rgba(73,183,223,45); border-radius: 4px; }"
+            "QMenu::separator { background: rgba(255,255,255,30); height: 1px; margin: 5px 6px; }"));
+    }
+    void blurMenu(QMenu *menu) {
+        if (!menu->windowHandle()) return;
+        QPainterPath path;
+        path.addRoundedRect(QRectF(menu->rect()), 14, 14);
+        // Blur only the rounded surface, not the transparent corner pixels.
+        KWindowEffects::enableBlurBehind(menu->windowHandle(), true,
+            QRegion(path.toFillPolygon().toPolygon()));
+    }
     bool pending = false;
     QPalette glassPalette;
     void recolorItems() {
@@ -70,7 +94,7 @@ class GlassRuntime : public QObject {
         theme->setCustomAlternateBackgroundColor(QColor(255,255,255,10));
     }
     void schedule() {
-        if (pending) return;
+        if (popupsOnly || pending) return;
         pending = true;
         QTimer::singleShot(0, this, [this] { initWidgets(); recolorItems(); });
     }
@@ -98,14 +122,25 @@ class GlassRuntime : public QObject {
     }
 public:
     GlassRuntime() : QObject(nullptr) {
-        const QString scheme = qEnvironmentVariable("PANEL_GLASS_SCHEME", QDir::homePath() + QStringLiteral("/.local/opt/panelglass-runtime/PanelGlassTransparent.colors"));
-        qGuiApp->setProperty("KDE_COLOR_SCHEME_PATH", scheme);
-        glassPalette = KColorScheme::createApplicationPalette(KSharedConfig::openConfig(scheme));
-        QGuiApplication::setPalette(glassPalette);
-        QQuickWindow::setDefaultAlphaBuffer(true);
+        if (!popupsOnly) {
+            const QString scheme = qEnvironmentVariable("PANEL_GLASS_SCHEME", QDir::homePath() + QStringLiteral("/.local/opt/panelglass-runtime/PanelGlassTransparent.colors"));
+            qGuiApp->setProperty("KDE_COLOR_SCHEME_PATH", scheme);
+            glassPalette = KColorScheme::createApplicationPalette(KSharedConfig::openConfig(scheme));
+            QGuiApplication::setPalette(glassPalette);
+            QQuickWindow::setDefaultAlphaBuffer(true);
+        }
         qGuiApp->installEventFilter(this);
     }
     bool eventFilter(QObject *object, QEvent *event) override {
+        if (auto *menu = qobject_cast<QMenu *>(object)) {
+            if (event->type() == QEvent::Polish || event->type() == QEvent::Show)
+                prepareMenu(menu);
+            if (event->type() == QEvent::Show || event->type() == QEvent::Resize)
+                blurMenu(menu);
+            // Keep Qt's native menu event handling and item painting.
+            return QObject::eventFilter(object, event);
+        }
+        if (popupsOnly) return QObject::eventFilter(object, event);
         if (event->type() == QEvent::ChildAdded || event->type() == QEvent::Show) schedule();
         if (auto *widget = qobject_cast<QWidget *>(object)) {
             if (event->type() == QEvent::ChildAdded || event->type() == QEvent::Polish) {

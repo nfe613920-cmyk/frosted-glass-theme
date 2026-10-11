@@ -12,6 +12,7 @@ def load(name, file):
     return module
 install = load('installer', ROOT / 'scripts/install.py')
 launcher = load('launcher', ROOT / 'scripts/panelglass-app.py')
+popup_launcher = load('popup_launcher', ROOT / 'runtime/popup-launcher.py')
 
 class RuntimeInstallationTests(unittest.TestCase):
     def test_round_trip_preserves_actions_arguments_and_missing_apps(self):
@@ -28,6 +29,10 @@ class RuntimeInstallationTests(unittest.TestCase):
             bundle = root / 'bundle'; (bundle / 'plugins/generic').mkdir(parents=True)
             (bundle / 'plugins/generic/libpanelglass.so').write_bytes(b'bundle fixture')
             (bundle / 'PanelGlassTransparent.colors').write_text('palette fixture')
+            private = home / '.local/opt/dolphin-glass/bin/dolphin'
+            private.parent.mkdir(parents=True); private.touch()
+            old_launcher = home / '.local/bin/dolphin-glass'
+            old_launcher.parent.mkdir(parents=True); old_launcher.write_text('previous private launcher')
             backup = install.Backup(home)
             def write(path, text, mode=None):
                 backup.save(path); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
@@ -43,19 +48,40 @@ class RuntimeInstallationTests(unittest.TestCase):
             self.assertIn('DBusActivatable=false', current)
             self.assertFalse((home / '.local/bin/kfontview-glass').exists())
             self.assertFalse((home / '.local/share/color-schemes/PanelGlassTransparent.colors').exists())
+            self.assertIn('popup-launcher.py', old_launcher.read_text())
             install.restore(home, backup.path)
+            self.assertEqual(old_launcher.read_text(), 'previous private launcher')
             self.assertEqual(target.read_text(), 'personal previous launcher')
             self.assertFalse((home / '.local/opt/panelglass-runtime').exists())
             self.assertFalse((home / '.local/bin/systemsettings-glass').exists())
+
+    def test_popup_environment_is_optional_and_keeps_existing_plugins(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            binary = home / 'private-app'; binary.touch()
+            original = {'QT_PLUGIN_PATH': '/existing', 'QT_QPA_GENERIC_PLUGINS': 'other,panelglass', 'LANG': 'zh_CN.UTF-8'}
+            with patch.object(popup_launcher.Path, 'home', return_value=home):
+                self.assertEqual(popup_launcher.environment(binary, original), original)
+                plugin = home / '.local/opt/panelglass-runtime/plugins/generic/libpanelglass.so'
+                plugin.parent.mkdir(parents=True); plugin.touch()
+                current = popup_launcher.environment(binary, original)
+            self.assertEqual(current['PANEL_GLASS_POPUPS_ONLY'], '1')
+            self.assertEqual(current['PANEL_GLASS_HOST'], str(binary.resolve()))
+            self.assertEqual(current['QT_QPA_GENERIC_PLUGINS'], 'other,panelglass')
+            self.assertTrue(current['QT_PLUGIN_PATH'].endswith(':/existing'))
+            self.assertEqual(current['LANG'], original['LANG'])
+            self.assertNotIn('PANEL_GLASS_POPUPS_ONLY', original)
 
     def test_symlink_host_and_existing_qt_environment(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); binary = root / 'systemsettings'; binary.touch()
             info = root / 'kinfocenter'; info.symlink_to(binary)
-            env = launcher.environment(info, root / 'runtime', {'QT_PLUGIN_PATH': '/existing', 'QT_QPA_GENERIC_PLUGINS': 'other,panelglass', 'LANG': 'zh_CN.UTF-8'})
+            env = launcher.environment(info, root / 'runtime', {'QT_PLUGIN_PATH': '/existing', 'QT_QPA_GENERIC_PLUGINS': 'other,panelglass', 'LANG': 'zh_CN.UTF-8', 'PANEL_GLASS_POPUPS_ONLY': '1'})
             self.assertEqual(env['PANEL_GLASS_HOST'], str(binary))
             self.assertTrue(env['QT_PLUGIN_PATH'].endswith(':/existing'))
             self.assertEqual(env['QT_QPA_GENERIC_PLUGINS'], 'other,panelglass')
             self.assertEqual(env['LANG'], 'zh_CN.UTF-8')
+            self.assertNotIn('PANEL_GLASS_POPUPS_ONLY', env)
 
 if __name__ == '__main__': unittest.main()

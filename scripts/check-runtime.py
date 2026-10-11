@@ -12,3 +12,6 @@ env = {**os.environ, 'QT_QPA_PLATFORM': 'offscreen', 'QT_QUICK_BACKEND': 'softwa
        'PANEL_GLASS_SCHEME': str(ROOT / 'runtime/PanelGlassTransparent.colors'),
        'QT_PLUGIN_PATH': str(build / 'plugins'), 'QT_QPA_GENERIC_PLUGINS': 'panelglass'}
 subprocess.run([str(build / 'panelglass-test')], env=env, check=True)
+
+env['PANEL_GLASS_POPUPS_ONLY'] = '1'
+subprocess.run([str(build / 'panelglass-test')], env=env, check=True)

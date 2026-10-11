@@ -254,6 +254,16 @@ RUNTIME_APPS = {
 
 def install_runtime(home, bundle, copy, write, applications=Path('/usr/share/applications'), binaries=Path('/usr/bin')):
     copy(bundle, home / '.local/opt/panelglass-runtime')
+    # Refresh existing private app launchers too: menu-only styling preserves
+    # their individually patched main windows without adding a second layer.
+    for app, directory in [('dolphin', 'dolphin-glass'), ('ark', 'ark-glass'),
+                           ('kate', 'kate-glass'), ('kwrite', 'kate-glass'),
+                           ('spectacle', 'spectacle-glass')]:
+        if (home / '.local/opt' / directory / 'bin' / app).is_file():
+            write(home / '.local/bin' / (app + '-glass'),
+                  (ROOT / 'scripts' / (app + '-glass.py')).read_text(), 0o755)
+    if (binaries / 'konsole').is_file():
+        write(home / '.local/bin/konsole-glass', (ROOT / 'scripts/konsole-glass.py').read_text(), 0o755)
     source = (ROOT / 'scripts/panelglass-app.py').read_text()
     installed = []
     for name, app in RUNTIME_APPS.items():
@@ -327,7 +337,7 @@ def main():
             parser.error('--kate-bundle requires --decoration for matching titlebar and corners')
         if not (args.kate_bundle / 'bin/kate').is_file() or not (args.kate_bundle / 'lib/libKF6TextEditor.so.6').is_file() or not any(p.is_file() for p in (args.kate_bundle / 'lib').glob('libkateprivate.so.*')):
             parser.error('Kate bundle is incomplete; build it first')
-    if args.runtime_bundle and (not args.decoration or not all((args.runtime_bundle / name).is_file() for name in ['plugins/generic/libpanelglass.so', 'PanelGlassTransparent.colors'])):
+    if args.runtime_bundle and (not args.decoration or not all((args.runtime_bundle / name).is_file() for name in ['plugins/generic/libpanelglass.so', 'PanelGlassTransparent.colors', 'popup-launcher.py'])):
         parser.error('Runtime requires a complete bundle and matching decoration')
     if args.panels and not args.dry_run:
         subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell'], check=True, stdout=subprocess.DEVNULL)
