@@ -29,10 +29,13 @@
   "netfloat_repository": "https://github.com/nfe613920-cmyk/netfloat",
   "dolphin_source_commit": "f19f070e7dc140213a2c6dd5d11f26122c89e1a0",
   "launcher_icon": "frosted-arch-white",
-  "updated_date": "2026-10-12",
+  "updated_date": "2026-10-13",
   "ark_source_commit": "b65302c2ee5aefd4042f1a09b1b280c2aa3d0c88",
   "kate_source_commit": "2b6465a886b9d3bfc6eab25065c14ffe025e6ac3",
   "ktexteditor_source_commit": "fe956fbc80eb125cda947972b7ad46c101d3456b",
   "spectacle_source_commit": "343a0229b4cbb7961ae915629eaa687f8ef81eaa",
-  "runtime": "per-application Qt GenericPlugin with executable-bound host isolation"
+  "runtime": "per-application Qt GenericPlugin with executable-bound host isolation",
+  "reuse_verified_date": "2026-10-13",
+  "complete_restore": "scripts/restore-all.py",
+  "reuse_check": "scripts/check-reuse.py"
 }

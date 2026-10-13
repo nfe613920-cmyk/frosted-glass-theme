@@ -23,21 +23,29 @@
 
 已在 Arch Linux、Plasma/Breeze 6.7.5、Qt 6.12.0、Konsole/Dolphin/Ark 26.08.2 上构建和使用。其他发行版需安装对应的 KDE/Qt 开发包。
 
+完整恢复包括窗口装饰、通用菜单插件、Dolphin、Ark、Kate/KWrite 和 Spectacle；仅构建装饰并运行基础安装器不会恢复所有应用。
+
+在已安装 Plasma 桌面的 Arch 系统准备依赖后运行：
+
 ```sh
-sudo pacman -S --needed git python cmake base-devel extra-cmake-modules qt6-base qt6-svg breeze kdecoration kcolorscheme kconfig kguiaddons ki18n kiconthemes kwindowsystem frameworkintegration kcmutils konsole
+sudo pacman -S --needed git python cmake base-devel extra-cmake-modules \
+  qt6-base qt6-svg qt6-declarative qt6-multimedia qt6-speech qt6-wayland \
+  breeze kdecoration kirigami kcolorscheme kconfig kguiaddons ki18n \
+  kiconthemes kwindowsystem frameworkintegration kcmutils kio kparts \
+  kbookmarks solid kcompletion ktextwidgets knotifications kcrash \
+  kwidgetsaddons kcodecs kfilemetadata baloo baloo-widgets kitemmodels \
+  ktexteditor syntax-highlighting karchive sonnet kauth editorconfig \
+  libarchive kpipewire layer-shell-qt kquickimageeditor opencv tesseract \
+  konsole dolphin ark kate spectacle
 git clone https://github.com/nfe613920-cmyk/frosted-glass-theme.git
 cd frosted-glass-theme
-python3 scripts/build-decoration.py
+python3 scripts/restore-all.py --dry-run
+python3 scripts/restore-all.py --apply
 ```
 
-构建脚本检测当前安装的 Breeze 版本，从 KDE 官方仓库下载对应发行标签并检查补丁。仅构建窗口装饰，不安装上游的面板、壁纸或系统样式。构建结束会打印 `.so` 的实际路径。
+`--dry-run` 打印全部构建和安装命令，不下载、不写入。`--build` 只构建；`--apply` 先完成全部构建，再安装所有 bundle 和启动入口，自动备份旧配置。已经构建完成时可用 `--apply --use-built`。脚本检测当前安装版本，补丁无法应用时停止，不静默使用旧的系统应用。
 
-以 Breeze 6.7.5 为例：
-
-```sh
-python3 scripts/install.py --dry-run --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so
-python3 scripts/install.py --apply --decoration build/decoration-6.7.5/bin/org.kde.breeze.konsoleglass-rounded.so
-```
+完整恢复脚本不安装软件包、不修改面板布局，也不包含独立仓库 NetFloat。其他发行版需安装对应开发包，并通过 `--breeze-version`、`--ktexteditor-version` 等参数指定准确的本机版本。当前补丁在下述版本组合验证；KDE/Qt 更新后需重新构建，补丁不兼容时需要迁移，不能保证任意未来版本可直接恢复。
 
 安装只写入当前用户目录，自动备份被替换的文件。随后注销并重新登录，让 Plasma 加载主题和自定义组件；从应用菜单启动 Konsole。
 
@@ -54,7 +62,7 @@ python3 scripts/install.py --apply --panels
 非 Arch 系统先查询已安装的 Breeze 版本，然后运行：
 
 ```sh
-python3 scripts/build-decoration.py --breeze-version 6.7.5
+python3 scripts/restore-all.py --dry-run --breeze-version 6.7.5 --ktexteditor-version 6.30.0
 ```
 
 ## 撤销安装
@@ -79,7 +87,16 @@ python3 scripts/install.py --restore ~/.local/state/frosted-glass-theme/backups/
 
 ## NetFloat
 
-[NetFloat](https://github.com/nfe613920-cmyk/netfloat) 保持独立仓库，本仓库不复制其源码或二进制。它读取当前 Plasma 面板主题，因此安装这里的 Plasma 样式后可跟随同一毛玻璃效果。支持主题联动和悬浮面板边缘对齐的本地修改提交为 `91898a4`，请确认使用的 NetFloat 版本包含此提交。
+[NetFloat](https://github.com/nfe613920-cmyk/netfloat) 保持独立仓库，本仓库不复制其源码或二进制。它读取当前 Plasma 面板主题，因此安装这里的 Plasma 样式后可跟随同一毛玻璃效果。支持主题联动和悬浮面板边缘对齐的本地修改提交为 `91898a4`，该提交已推送到 NetFloat 的 `main`。在新系统单独恢复：
+
+```sh
+sudo pacman -S --needed libplasma ksvg kirigami libx11 qt6-svg kwindowsystem
+git clone https://github.com/nfe613920-cmyk/netfloat.git
+cd netfloat
+./install.sh
+```
+
+NetFloat 的构建/安装仍由其独立仓库维护。原有窗口位置、网卡选择等个人设置和开机自启没有自动复制到主题仓库。
 
 ## 文件结构
 
@@ -87,7 +104,7 @@ python3 scripts/install.py --restore ~/.local/state/frosted-glass-theme/backups/
 - `assets/konsole/`、`assets/color-schemes/`：终端配色、配置和工具栏样式。
 - `layout/panels.js`：可选的面板布局重建脚本，使用当前会话分配的组件 ID。
 - `patches/`：共享 Breeze 窗口装饰，以及 Dolphin、Ark 的背景补丁。
-- `scripts/`：构建、安装、备份和恢复。
+- `scripts/`：完整恢复入口 `restore-all.py`，以及单组件构建、安装、备份和恢复。
 - `tests/`：隔离目录中的安装/恢复测试，以及面板脚本模拟测试。
 - `theme.json`：当前参数与已验证的软件版本。
 
@@ -98,7 +115,12 @@ python3 scripts/install.py --restore ~/.local/state/frosted-glass-theme/backups/
 ```sh
 python3 -m unittest discover -s tests -v
 node tests/test-panels.cjs
+python3 scripts/check-runtime.py
+# 构建全部组件后：在临时 HOME 完整安装、测试启动入口并回滚，不动当前桌面
+python3 scripts/check-reuse.py
 ```
+
+复用验证记录见 [docs/reuse-audit.md](docs/reuse-audit.md)。
 
 参考：[Plasma 桌面脚本 API](https://develop.kde.org/docs/plasma/scripting/api/)、[Plasma 主题元素](https://develop.kde.org/docs/plasma/theme/theme-elements/)、[Breeze 源码](https://github.com/KDE/breeze)。许可证与上游来源见 [LICENSE](LICENSE) 和 [docs/upstream.md](docs/upstream.md)。
 
