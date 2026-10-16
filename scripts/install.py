@@ -99,7 +99,7 @@ def install_dolphin(home, bundle, copy, write):
     desktop = Path('/usr/share/applications/org.kde.dolphin.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Dolphin\nIcon=system-file-manager\nExec=dolphin %u\n'
     text = set_key(text, ['Desktop Entry'], 'X-KDE-Shortcuts', 'Meta+E')
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
@@ -123,7 +123,7 @@ def install_ark(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/ark-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.ark.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Ark\nIcon=ark\nExec=ark %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
@@ -144,7 +144,7 @@ def install_kate(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/kate-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.kate.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Kate\nIcon=kate\nExec=kate %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
@@ -165,7 +165,7 @@ def install_kwrite(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/kwrite-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.kwrite.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=KWrite\nIcon=kwrite\nExec=kwrite %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
@@ -185,7 +185,7 @@ def install_spectacle(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/spectacle-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.spectacle.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Spectacle\nIcon=spectacle\nExec=spectacle %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
@@ -201,7 +201,7 @@ def install_spectacle(home, bundle, copy, write):
     write(home / '.local/share/kglobalaccel/org.kde.spectacle.desktop', '\n'.join(lines) + '\n')
     # KWin authorizes the actual process executable, not its wrapper or app ID.
     binary = home / '.local/opt/spectacle-glass/bin/spectacle'
-    escaped_binary = str(binary).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+    escaped_binary = str(binary).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
     authorization = ('[Desktop Entry]\nType=Application\nName=Spectacle Glass Capture\nNoDisplay=true\n'
                      'Exec=' + escaped_binary + '\n'
                      'X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n')
@@ -272,7 +272,7 @@ def install_runtime(home, bundle, copy, write, applications=Path('/usr/share/app
         launcher = home / '.local/bin' / (app + '-glass')
         write(launcher, source, 0o755)
         # Quote desktop Exec arguments using the freedesktop escaping rules.
-        escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+        escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
         lines = []
         for line in desktop.read_text().splitlines():
             if line.startswith('Exec='):
@@ -332,59 +332,34 @@ def main():
             print(f'Dry run: would copy {source} -> {destination}')
             return
         destination.parent.mkdir(parents=True, exist_ok=True)
+        remove(destination)
         if source.is_dir():
-            if destination.exists():
-                shutil.rmtree(destination)
-            shutil.copytree(source, destination, symlinks=True)
+            shutil.copytree(source, destination)
         else:
             shutil.copy2(source, destination)
 
-    def config(name, group, key, value):
-        file = home / '.config' / name
-        backup.save(file)
-        if args.dry_run:
-            print(f'Dry run: would set {name} [{"][".join(group)}] {key}={value}')
-            return
-        text = file.read_text() if file.exists() else ''
-        file.parent.mkdir(parents=True, exist_ok=True)
-        file.write_text(set_key(text, group, key, value))
-
-    if args.dry_run:
-        print('Dry run: would modify kwinrc, desktop themes, and private launchers.')
-        shutil.rmtree(backup.path)
-        return
+    def config(filename, group, key, value):
+        target = home / '.config' / filename
+        text = target.read_text() if target.exists() else ''
+        write(target, set_key(text, group, key, value))
 
     try:
-        theme = ROOT / 'assets/plasma-theme/codex-frosted-glass'
-        copy(theme, home / '.local/share/plasma/desktoptheme/codex-frosted-glass')
-        icons = ROOT / 'assets/icons/codex-glass-icons'
-        copy(icons, home / '.local/share/icons/codex-glass-icons')
-        konsole_profile = ROOT / 'assets/konsole-profiles/PanelGlass.profile'
-        copy(konsole_profile, home / '.local/share/konsole/PanelGlass.profile')
-        konsole_color = ROOT / 'assets/konsole-profiles/PanelGlass.colorscheme'
-        copy(konsole_color, home / '.local/share/konsole/PanelGlass.colorscheme')
-
+        for category in ['plasma/desktoptheme', 'plasma/plasmoids', 'konsole', 'color-schemes']:
+            for source in (ROOT / 'assets' / category).iterdir():
+                copy(source, home / '.local/share' / category / source.name)
+        copy(ROOT / 'assets/icons/frosted-arch-white.svg', home / '.local/share/icons/hicolor/scalable/apps/frosted-arch-white.svg')
         config('plasmarc', ['Theme'], 'name', 'codex-frosted-glass')
-        config('kdeglobals', ['Icons'], 'Theme', 'codex-glass-icons')
+        config('konsolerc', ['Desktop Entry'], 'DefaultProfile', 'PanelGlass.profile')
+        config('konsolerc', ['UiSettings'], 'ColorScheme', 'KonsolePanelGlass')
+        config('konsolerc', ['KonsoleWindow'], 'RemoveWindowTitleBarAndFrame', 'false')
+        config('konsolerc', ['MainWindow'], 'MenuBar', 'Disabled')
         config('kwinrc', ['Plugins'], 'blurEnabled', 'true')
-        config('kwinrc', ['Plugins'], 'glideEnabled', 'true')
-        config('kwinrc', ['Plugins'], 'magiclampEnabled', 'true')
-        config('kwinrc', ['Plugins'], 'translucencyEnabled', 'true')
-        config('kwinrc', ['Plugins'], 'wobblywindowsEnabled', 'true')
-        config('kwinrc', ['Effect-translucency'], 'ComboboxPopups', '85')
-        config('kwinrc', ['Effect-translucency'], 'Dialogs', '85')
-        config('kwinrc', ['Effect-translucency'], 'Menus', '85')
-        config('kwinrc', ['Effect-translucency'], 'MoveResize', '85')
-        config('kwinrc', ['Windows'], 'InactiveTabsSkipTaskbar', 'true')
-        config('kwinrc', ['Windows'], 'FocusPolicy', 'FocusFollowsMouse')
-        config('kwinrc', ['Windows'], 'NextFocusPrefersMouse', 'true')
-        config('kwinrc', ['org.kde.kdecoration2'], 'BorderSize', 'None')
-        config('kwinrc', ['org.kde.kdecoration2'], 'BorderSizeAuto', 'false')
-        config('kwinrc', ['org.kde.kdecoration2'], 'ShowOpaqueTitlebar', 'false')
-
+        config('kwinrc', ['Effect-blur'], 'BlurStrength', '15')
         if args.decoration:
-            plugin = args.decoration.resolve()
-            # KWin accepts relative decoration plugin paths: use that to load
+            digest = hashlib.sha256(args.decoration.read_bytes()).hexdigest()[:12]
+            plugin = home / '.local/lib/qt6/plugins/org.kde.kdecoration3' / ('org.kde.breeze.konsoleglass-' + digest + '.so')
+            copy(args.decoration, plugin)
+            # KWin prefixes its plugin namespace. A relative plugin ID resolves
             # through the existing system Qt plugin directory without root writes.
             config('kwinrc', ['org.kde.kdecoration2'], 'library', '../' * 10 + str(plugin).lstrip('/'))
         launcher = home / '.local/bin/konsole-glass'
@@ -399,7 +374,7 @@ def main():
                 line = 'TryExec=konsole'
             if line.startswith('Exec='):
                 suffix = ' --new-tab' if '--new-tab' in line else ' --separate'
-                escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+                escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
                 line = 'Exec=' + escaped + suffix
             lines.append(line)
         write(home / '.local/share/applications/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
