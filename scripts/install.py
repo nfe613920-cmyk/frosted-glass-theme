@@ -99,13 +99,13 @@ def install_dolphin(home, bundle, copy, write):
     desktop = Path('/usr/share/applications/org.kde.dolphin.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Dolphin\nIcon=system-file-manager\nExec=dolphin %u\n'
     text = set_key(text, ['Desktop Entry'], 'X-KDE-Shortcuts', 'Meta+E')
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
             # Preserve actions and URL placeholders from the system desktop file.
             command = line[5:].split(maxsplit=1)
-            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+            line = 'Exec=' + escaped + (' ' + command[1] if len(command) > 1 else '')
         if line.startswith('TryExec='):
             line = 'TryExec=dolphin'
         if line.startswith('DBusActivatable='):
@@ -113,7 +113,7 @@ def install_dolphin(home, bundle, copy, write):
         lines.append(line)
     write(home / '.local/share/applications/org.kde.dolphin.desktop', '\n'.join(lines) + '\n')
     write(home / '.local/share/kglobalaccel/org.kde.dolphin.desktop', '\n'.join(lines) + '\n')
-    service = '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec="' + escaped + '" --daemon\n'
+    service = '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec=' + escaped + ' --daemon\n'
     write(home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service', service)
 
 
@@ -123,12 +123,12 @@ def install_ark(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/ark-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.ark.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Ark\nIcon=ark\nExec=ark %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
             command = line[5:].split(maxsplit=1)
-            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+            line = 'Exec=' + escaped + (' ' + command[1] if len(command) > 1 else '')
         if line.startswith('TryExec='):
             line = 'TryExec=ark'
         if line.startswith('DBusActivatable='):
@@ -144,12 +144,12 @@ def install_kate(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/kate-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.kate.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Kate\nIcon=kate\nExec=kate %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
             command = line[5:].split(maxsplit=1)
-            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+            line = 'Exec=' + escaped + (' ' + command[1] if len(command) > 1 else '')
         if line.startswith('TryExec='):
             line = 'TryExec=kate'
         if line.startswith('DBusActivatable='):
@@ -165,12 +165,12 @@ def install_kwrite(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/kwrite-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.kwrite.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=KWrite\nIcon=kwrite\nExec=kwrite %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
             command = line[5:].split(maxsplit=1)
-            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+            line = 'Exec=' + escaped + (' ' + command[1] if len(command) > 1 else '')
         if line.startswith('TryExec='):
             line = 'TryExec=kwrite'
         if line.startswith('DBusActivatable='):
@@ -185,12 +185,12 @@ def install_spectacle(home, bundle, copy, write):
     write(launcher, (ROOT / 'scripts/spectacle-glass.py').read_text(), 0o755)
     desktop = Path('/usr/share/applications/org.kde.spectacle.desktop')
     text = desktop.read_text() if desktop.exists() else '[Desktop Entry]\nType=Application\nName=Spectacle\nIcon=spectacle\nExec=spectacle %U\n'
-    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
     lines = []
     for line in text.splitlines():
         if line.startswith('Exec='):
             command = line[5:].split(maxsplit=1)
-            line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+            line = 'Exec=' + escaped + (' ' + command[1] if len(command) > 1 else '')
         if line.startswith('TryExec='):
             line = 'TryExec=spectacle'
         if line.startswith('DBusActivatable='):
@@ -201,21 +201,20 @@ def install_spectacle(home, bundle, copy, write):
     write(home / '.local/share/kglobalaccel/org.kde.spectacle.desktop', '\n'.join(lines) + '\n')
     # KWin authorizes the actual process executable, not its wrapper or app ID.
     binary = home / '.local/opt/spectacle-glass/bin/spectacle'
-    escaped_binary = str(binary).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+    escaped_binary = str(binary).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
     authorization = ('[Desktop Entry]\nType=Application\nName=Spectacle Glass Capture\nNoDisplay=true\n'
-                     'Exec="' + escaped_binary + '"\n'
+                     'Exec=' + escaped_binary + '\n'
                      'X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2\n')
     write(home / '.local/share/applications/org.kde.spectacle-glass-capture.desktop', authorization)
     # The user desktop override hides the system desktop's original Exec too.
     # Keep the stock executable authorized for cached/explicit system launches.
     if Path('/usr/bin/spectacle').is_file():
-        stock_authorization = authorization.replace('Spectacle Glass Capture', 'Spectacle System Capture').replace('Exec="' + escaped_binary + '"', 'Exec="/usr/bin/spectacle"')
+        stock_authorization = authorization.replace('Spectacle Glass Capture', 'Spectacle System Capture').replace('Exec=' + escaped_binary, 'Exec=/usr/bin/spectacle')
         write(home / '.local/share/applications/org.kde.spectacle-system-capture.desktop', stock_authorization)
 
     for name in ['org.kde.Spectacle', 'org.kde.spectacle']:
-        service = '[D-BUS Service]\nName=' + name + '\nExec="' + escaped + '" --dbus\n'
+        service = '[D-BUS Service]\nName=' + name + '\nExec=' + escaped + ' --dbus\n'
         write(home / '.local/share/dbus-1/services' / (name + '.service'), service)
-
 
 
 RUNTIME_APPS = {
@@ -229,8 +228,8 @@ RUNTIME_APPS = {
     'assistant.desktop': 'assistant6',
     'qdbusviewer.desktop': 'qdbusviewer6',
     'cmake-gui.desktop': 'cmake-gui',
-    'org.kde.kinfocenter.desktop': 'kinfocenter',
     'org.kde.vpnimport.desktop': 'systemsettings',
+    'org.kde.kinfocenter.desktop': 'kinfocenter',
     'org.kde.discover.desktop': 'plasma-discover',
     'org.kde.discover.flatpak.desktop': 'plasma-discover',
     'org.kde.discover.snap.desktop': 'plasma-discover',
@@ -273,12 +272,12 @@ def install_runtime(home, bundle, copy, write, applications=Path('/usr/share/app
         launcher = home / '.local/bin' / (app + '-glass')
         write(launcher, source, 0o755)
         # Quote desktop Exec arguments using the freedesktop escaping rules.
-        escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
+        escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
         lines = []
         for line in desktop.read_text().splitlines():
             if line.startswith('Exec='):
                 command = line[5:].split(maxsplit=1)
-                line = 'Exec="' + escaped + '"' + (' ' + command[1] if len(command) > 1 else '')
+                line = 'Exec=' + escaped + (' ' + command[1] if len(command) > 1 else '')
             elif line.startswith('DBusActivatable='):
                 line = 'DBusActivatable=false'
             lines.append(line)
@@ -308,104 +307,84 @@ def main():
     parser.add_argument('--panels', action='store_true', help='Replace all existing panels with the saved top panel and bottom dock')
     args = parser.parse_args()
     home = args.home.expanduser().resolve()
-    live = not args.no_live and home == Path.home().resolve()
+
     if args.restore:
-        restore(home, args.restore.expanduser().resolve())
-        if live:
+        restore(home, args.restore.resolve())
+        if not args.no_live:
             reload_kwin()
-        print('Backup restored. Log out and back in to reload Plasma layout and open new Konsole windows.')
         return
-    if args.panels and not live and not args.dry_run:
-        parser.error('--panels needs a live Plasma session; omit --no-live and use your current home')
-    if args.decoration and not args.decoration.is_file():
-        parser.error('Decoration plugin does not exist; build it first')
-    if args.dolphin_bundle:
-        if not args.decoration:
-            parser.error('--dolphin-bundle requires --decoration for matching titlebar and corners')
-        if not all((args.dolphin_bundle / name).is_file() for name in ['bin/dolphin', 'lib/libdolphinprivate.so.6', 'lib/libdolphinvcs.so.6']):
-            parser.error('Dolphin bundle is incomplete; build it first')
-    if args.ark_bundle:
-        if not args.decoration:
-            parser.error('--ark-bundle requires --decoration for matching titlebar and corners')
-        if not (args.ark_bundle / 'bin/ark').is_file() or not list((args.ark_bundle / 'lib').glob('libkerfuffle.so.*')):
-            parser.error('Ark bundle is incomplete; build it first')
-    if args.spectacle_bundle:
-        if not args.decoration or not (args.spectacle_bundle / 'bin/spectacle').is_file():
-            parser.error('Spectacle requires a complete bundle and matching decoration')
-    if args.kate_bundle:
-        if not args.decoration:
-            parser.error('--kate-bundle requires --decoration for matching titlebar and corners')
-        if not (args.kate_bundle / 'bin/kate').is_file() or not (args.kate_bundle / 'lib/libKF6TextEditor.so.6').is_file() or not any(p.is_file() for p in (args.kate_bundle / 'lib').glob('libkateprivate.so.*')):
-            parser.error('Kate bundle is incomplete; build it first')
-    if args.runtime_bundle and (not args.decoration or not all((args.runtime_bundle / name).is_file() for name in ['plugins/generic/libpanelglass.so', 'PanelGlassTransparent.colors', 'popup-launcher.py'])):
-        parser.error('Runtime requires a complete bundle and matching decoration')
-    if args.panels and not args.dry_run:
-        subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell'], check=True, stdout=subprocess.DEVNULL)
-    plan = [('Install Plasma style and Dock separator', '.local/share/plasma'),
-            ('Install Konsole profile, palette and stylesheet', '.local/share/konsole'),
-            ('Select saved Plasma style and Konsole profile', '.config'),
-            ('Enable compositor blur at strength 15', '.config/kwinrc'),
-            ('Configure Konsole launcher for a continuous glass toolbar', '.local/share/applications/org.kde.konsole.desktop')]
-    if args.decoration:
-        plan.append(('Install and select matching native Konsole glass decoration', '.local/lib/qt6/plugins/org.kde.kdecoration3'))
-    if args.dolphin_bundle:
-        plan.append(('Install opt-in Dolphin glass build and launcher', '.local/opt/dolphin-glass'))
-    if args.ark_bundle:
-        plan.append(('Install opt-in Ark glass build and launcher', '.local/opt/ark-glass'))
-    if args.spectacle_bundle:
-        plan.append(('Install Spectacle glass build, desktop and DBus launchers', '.local/opt/spectacle-glass'))
-    if args.kate_bundle:
-        plan.append(('Install opt-in Kate glass build, editor theme and launcher', '.local/opt/kate-glass'))
-    if args.runtime_bundle:
-        plan.append(('Install per-application KDE glass runtime and launchers', '.local/opt/panelglass-runtime'))
-    if args.panels:
-        plan.append(('Replace existing panels with saved layout', '.config/plasma-org.kde.plasma.desktop-appletsrc'))
-    for message, path in plan:
-        print(message + ': ' + str(home / path))
-    if args.dry_run:
-        return
+
     backup = Backup(home)
 
-    def write(target, text, mode=None):
-        backup.save(target)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if target.is_symlink():
-            target.unlink()
-        target.write_text(text)
-        if mode:
-            target.chmod(mode)
+    def write(path, text, mode=None):
+        backup.save(path)
+        if args.dry_run:
+            print(f'Dry run: would write {path}')
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        if mode is not None:
+            path.chmod(mode)
 
-    def copy(source, target):
-        backup.save(target)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        remove(target)
+    def copy(source, destination):
+        backup.save(destination)
+        if args.dry_run:
+            print(f'Dry run: would copy {source} -> {destination}')
+            return
+        destination.parent.mkdir(parents=True, exist_ok=True)
         if source.is_dir():
-            shutil.copytree(source, target)
+            if destination.exists():
+                shutil.rmtree(destination)
+            shutil.copytree(source, destination, symlinks=True)
         else:
-            shutil.copy2(source, target)
+            shutil.copy2(source, destination)
 
-    def config(filename, group, key, value):
-        target = home / '.config' / filename
-        text = target.read_text() if target.exists() else ''
-        write(target, set_key(text, group, key, value))
+    def config(name, group, key, value):
+        file = home / '.config' / name
+        backup.save(file)
+        if args.dry_run:
+            print(f'Dry run: would set {name} [{"][".join(group)}] {key}={value}')
+            return
+        text = file.read_text() if file.exists() else ''
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(set_key(text, group, key, value))
+
+    if args.dry_run:
+        print('Dry run: would modify kwinrc, desktop themes, and private launchers.')
+        shutil.rmtree(backup.path)
+        return
 
     try:
-        for category in ['plasma/desktoptheme', 'plasma/plasmoids', 'konsole', 'color-schemes']:
-            for source in (ROOT / 'assets' / category).iterdir():
-                copy(source, home / '.local/share' / category / source.name)
-        copy(ROOT / 'assets/icons/frosted-arch-white.svg', home / '.local/share/icons/hicolor/scalable/apps/frosted-arch-white.svg')
+        theme = ROOT / 'assets/plasma-theme/codex-frosted-glass'
+        copy(theme, home / '.local/share/plasma/desktoptheme/codex-frosted-glass')
+        icons = ROOT / 'assets/icons/codex-glass-icons'
+        copy(icons, home / '.local/share/icons/codex-glass-icons')
+        konsole_profile = ROOT / 'assets/konsole-profiles/PanelGlass.profile'
+        copy(konsole_profile, home / '.local/share/konsole/PanelGlass.profile')
+        konsole_color = ROOT / 'assets/konsole-profiles/PanelGlass.colorscheme'
+        copy(konsole_color, home / '.local/share/konsole/PanelGlass.colorscheme')
+
         config('plasmarc', ['Theme'], 'name', 'codex-frosted-glass')
-        config('konsolerc', ['Desktop Entry'], 'DefaultProfile', 'PanelGlass.profile')
-        config('konsolerc', ['UiSettings'], 'ColorScheme', 'KonsolePanelGlass')
-        config('konsolerc', ['KonsoleWindow'], 'RemoveWindowTitleBarAndFrame', 'false')
-        config('konsolerc', ['MainWindow'], 'MenuBar', 'Disabled')
+        config('kdeglobals', ['Icons'], 'Theme', 'codex-glass-icons')
         config('kwinrc', ['Plugins'], 'blurEnabled', 'true')
-        config('kwinrc', ['Effect-blur'], 'BlurStrength', '15')
+        config('kwinrc', ['Plugins'], 'glideEnabled', 'true')
+        config('kwinrc', ['Plugins'], 'magiclampEnabled', 'true')
+        config('kwinrc', ['Plugins'], 'translucencyEnabled', 'true')
+        config('kwinrc', ['Plugins'], 'wobblywindowsEnabled', 'true')
+        config('kwinrc', ['Effect-translucency'], 'ComboboxPopups', '85')
+        config('kwinrc', ['Effect-translucency'], 'Dialogs', '85')
+        config('kwinrc', ['Effect-translucency'], 'Menus', '85')
+        config('kwinrc', ['Effect-translucency'], 'MoveResize', '85')
+        config('kwinrc', ['Windows'], 'InactiveTabsSkipTaskbar', 'true')
+        config('kwinrc', ['Windows'], 'FocusPolicy', 'FocusFollowsMouse')
+        config('kwinrc', ['Windows'], 'NextFocusPrefersMouse', 'true')
+        config('kwinrc', ['org.kde.kdecoration2'], 'BorderSize', 'None')
+        config('kwinrc', ['org.kde.kdecoration2'], 'BorderSizeAuto', 'false')
+        config('kwinrc', ['org.kde.kdecoration2'], 'ShowOpaqueTitlebar', 'false')
+
         if args.decoration:
-            digest = hashlib.sha256(args.decoration.read_bytes()).hexdigest()[:12]
-            plugin = home / '.local/lib/qt6/plugins/org.kde.kdecoration3' / ('org.kde.breeze.konsoleglass-' + digest + '.so')
-            copy(args.decoration, plugin)
-            # KWin prefixes its plugin namespace. A relative plugin ID resolves
+            plugin = args.decoration.resolve()
+            # KWin accepts relative decoration plugin paths: use that to load
             # through the existing system Qt plugin directory without root writes.
             config('kwinrc', ['org.kde.kdecoration2'], 'library', '../' * 10 + str(plugin).lstrip('/'))
         launcher = home / '.local/bin/konsole-glass'
@@ -420,8 +399,8 @@ def main():
                 line = 'TryExec=konsole'
             if line.startswith('Exec='):
                 suffix = ' --new-tab' if '--new-tab' in line else ' --separate'
-                escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$')
-                line = 'Exec="' + escaped + '"' + suffix
+                escaped = str(launcher).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace(' ', '\\ ')
+                line = 'Exec=' + escaped + suffix
             lines.append(line)
         write(home / '.local/share/applications/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
         write(home / '.local/share/kglobalaccel/org.kde.konsole.desktop', '\n'.join(lines) + '\n')
@@ -438,19 +417,13 @@ def main():
         if args.runtime_bundle:
             install_runtime(home, args.runtime_bundle, copy, write)
         if args.panels:
-            for name in ['plasma-org.kde.plasma.desktop-appletsrc', 'plasmashellrc']:
-                backup.save(home / '.config' / name)
-            script = (ROOT / 'layout/panels.js').read_text()
-            subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell', 'org.kde.PlasmaShell.evaluateScript', script], check=True)
-        if live:
-            subprocess.run(['kbuildsycoca6', '--noincremental'], check=True, stdout=subprocess.DEVNULL)
+            layout = ROOT / 'layout/panels.js'
+            subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell', 'org.kde.PlasmaShell.loadScriptInInteractiveConsole', str(layout)], check=True)
+        if not args.no_live:
             reload_kwin()
     except Exception:
         restore(home, backup.path)
-        print('Installation failed; saved files restored. If panel layout was running, log out and back in.', file=sys.stderr)
         raise
-    print('Backup: ' + str(backup.path))
-    print('Log out and back in to reload Plasma; open Konsole from its application launcher.')
 
 
 if __name__ == '__main__':

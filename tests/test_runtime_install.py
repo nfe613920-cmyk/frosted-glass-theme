@@ -42,7 +42,7 @@ class RuntimeInstallationTests(unittest.TestCase):
             entries = install.install_runtime(home, bundle, copy, write, applications, binaries)
             self.assertEqual(entries, ['systemsettings.desktop'])
             current = target.read_text()
-            self.assertIn('"' + str(home / '.local/bin/systemsettings-glass') + '" kcm_colors', current)
+            self.assertIn(str(home / '.local/bin/systemsettings-glass').replace(' ', '\\ ') + ' kcm_colors', current)
             self.assertIn(' --args VPN=%f', current)
             self.assertIn('Actions=VPN;', current)
             self.assertIn('DBusActivatable=false', current)
