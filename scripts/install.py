@@ -307,36 +307,81 @@ def main():
     parser.add_argument('--panels', action='store_true', help='Replace all existing panels with the saved top panel and bottom dock')
     args = parser.parse_args()
     home = args.home.expanduser().resolve()
-
+    live = not args.no_live and home == Path.home().resolve()
     if args.restore:
-        restore(home, args.restore.resolve())
-        if not args.no_live:
+        restore(home, args.restore.expanduser().resolve())
+        if live:
             reload_kwin()
+        print('Backup restored. Log out and back in to reload Plasma layout and open new Konsole windows.')
         return
-
+    if args.panels and not live and not args.dry_run:
+        parser.error('--panels needs a live Plasma session; omit --no-live and use your current home')
+    if args.decoration and not args.decoration.is_file():
+        parser.error('Decoration plugin does not exist; build it first')
+    if args.dolphin_bundle:
+        if not args.decoration:
+            parser.error('--dolphin-bundle requires --decoration for matching titlebar and corners')
+        if not all((args.dolphin_bundle / name).is_file() for name in ['bin/dolphin', 'lib/libdolphinprivate.so.6', 'lib/libdolphinvcs.so.6']):
+            parser.error('Dolphin bundle is incomplete; build it first')
+    if args.ark_bundle:
+        if not args.decoration:
+            parser.error('--ark-bundle requires --decoration for matching titlebar and corners')
+        if not (args.ark_bundle / 'bin/ark').is_file() or not list((args.ark_bundle / 'lib').glob('libkerfuffle.so.*')):
+            parser.error('Ark bundle is incomplete; build it first')
+    if args.spectacle_bundle:
+        if not args.decoration or not (args.spectacle_bundle / 'bin/spectacle').is_file():
+            parser.error('Spectacle requires a complete bundle and matching decoration')
+    if args.kate_bundle:
+        if not args.decoration:
+            parser.error('--kate-bundle requires --decoration for matching titlebar and corners')
+        if not (args.kate_bundle / 'bin/kate').is_file() or not (args.kate_bundle / 'lib/libKF6TextEditor.so.6').is_file() or not any(p.is_file() for p in (args.kate_bundle / 'lib').glob('libkateprivate.so.*')):
+            parser.error('Kate bundle is incomplete; build it first')
+    if args.runtime_bundle and (not args.decoration or not all((args.runtime_bundle / name).is_file() for name in ['plugins/generic/libpanelglass.so', 'PanelGlassTransparent.colors', 'popup-launcher.py'])):
+        parser.error('Runtime requires a complete bundle and matching decoration')
+    if args.panels and not args.dry_run:
+        subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell'], check=True, stdout=subprocess.DEVNULL)
+    plan = [('Install Plasma style and Dock separator', '.local/share/plasma'),
+            ('Install Konsole profile, palette and stylesheet', '.local/share/konsole'),
+            ('Select saved Plasma style and Konsole profile', '.config'),
+            ('Enable compositor blur at strength 15', '.config/kwinrc'),
+            ('Configure Konsole launcher for a continuous glass toolbar', '.local/share/applications/org.kde.konsole.desktop')]
+    if args.decoration:
+        plan.append(('Install and select matching native Konsole glass decoration', '.local/lib/qt6/plugins/org.kde.kdecoration3'))
+    if args.dolphin_bundle:
+        plan.append(('Install opt-in Dolphin glass build and launcher', '.local/opt/dolphin-glass'))
+    if args.ark_bundle:
+        plan.append(('Install opt-in Ark glass build and launcher', '.local/opt/ark-glass'))
+    if args.spectacle_bundle:
+        plan.append(('Install Spectacle glass build, desktop and DBus launchers', '.local/opt/spectacle-glass'))
+    if args.kate_bundle:
+        plan.append(('Install opt-in Kate glass build, editor theme and launcher', '.local/opt/kate-glass'))
+    if args.runtime_bundle:
+        plan.append(('Install per-application KDE glass runtime and launchers', '.local/opt/panelglass-runtime'))
+    if args.panels:
+        plan.append(('Replace existing panels with saved layout', '.config/plasma-org.kde.plasma.desktop-appletsrc'))
+    for message, path in plan:
+        print(message + ': ' + str(home / path))
+    if args.dry_run:
+        return
     backup = Backup(home)
 
-    def write(path, text, mode=None):
-        backup.save(path)
-        if args.dry_run:
-            print(f'Dry run: would write {path}')
-            return
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text)
-        if mode is not None:
-            path.chmod(mode)
+    def write(target, text, mode=None):
+        backup.save(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.is_symlink():
+            target.unlink()
+        target.write_text(text)
+        if mode:
+            target.chmod(mode)
 
-    def copy(source, destination):
-        backup.save(destination)
-        if args.dry_run:
-            print(f'Dry run: would copy {source} -> {destination}')
-            return
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        remove(destination)
+    def copy(source, target):
+        backup.save(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        remove(target)
         if source.is_dir():
-            shutil.copytree(source, destination)
+            shutil.copytree(source, target)
         else:
-            shutil.copy2(source, destination)
+            shutil.copy2(source, target)
 
     def config(filename, group, key, value):
         target = home / '.config' / filename
@@ -392,13 +437,19 @@ def main():
         if args.runtime_bundle:
             install_runtime(home, args.runtime_bundle, copy, write)
         if args.panels:
-            layout = ROOT / 'layout/panels.js'
-            subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell', 'org.kde.PlasmaShell.loadScriptInInteractiveConsole', str(layout)], check=True)
-        if not args.no_live:
+            for name in ['plasma-org.kde.plasma.desktop-appletsrc', 'plasmashellrc']:
+                backup.save(home / '.config' / name)
+            script = (ROOT / 'layout/panels.js').read_text()
+            subprocess.run(['qdbus6', 'org.kde.plasmashell', '/PlasmaShell', 'org.kde.PlasmaShell.evaluateScript', script], check=True)
+        if live:
+            subprocess.run(['kbuildsycoca6', '--noincremental'], check=True, stdout=subprocess.DEVNULL)
             reload_kwin()
     except Exception:
         restore(home, backup.path)
+        print('Installation failed; saved files restored. If panel layout was running, log out and back in.', file=sys.stderr)
         raise
+    print('Backup: ' + str(backup.path))
+    print('Log out and back in to reload Plasma; open Konsole from its application launcher.')
 
 
 if __name__ == '__main__':
