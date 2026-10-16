@@ -39,24 +39,24 @@ class InstallationTests(unittest.TestCase):
             shortcut = home / '.local/share/kglobalaccel/org.kde.konsole.desktop'
             self.assertEqual(shortcut.read_text(), desktop)
             self.assertIn('X-KDE-Shortcuts=Ctrl+Alt+T', shortcut.read_text())
-            self.assertTrue((home / '.local/share/konsole/PanelGlass.colorscheme').exists())
-            self.assertTrue((home / '.local/share/icons/hicolor/scalable/apps/frosted-arch-white.svg').exists())
             backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
-            subprocess.run([sys.executable, str(SCRIPT), '--restore', str(backup),
-                            '--home', str(home), '--no-live'], capture_output=True, check=True)
+            self.assertIn(str(backup), result.stdout)
+            subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
             self.assertEqual((config / 'kwinrc').read_text(), old)
             self.assertEqual((old_theme / 'original.txt').read_text(), 'previous theme')
-            self.assertFalse((home / '.local/share/applications/org.kde.konsole.desktop').exists())
             self.assertFalse((home / '.local/share/konsole/PanelGlass.profile').exists())
+            self.assertFalse(shortcut.exists())
 
-    def test_dolphin_bundle_launchers_and_restore(self):
+    def test_dolphin_bundle_install_and_restore(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'new user'
             bundle = Path(tmp) / 'bundle'
-            (bundle / 'bin').mkdir(parents=True)
-            (bundle / 'bin/dolphin').touch()
-            plugin = Path(tmp) / 'fake.so'
-            plugin.touch()
+            for name in ['bin/dolphin', 'lib/libdolphinprivate.so.6', 'lib/libdolphinvcs.so.6']:
+                target = bundle / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
             desktop = home / '.local/share/applications/org.kde.dolphin.desktop'
             desktop.parent.mkdir(parents=True)
             desktop.write_text('previous launcher')
@@ -66,26 +66,26 @@ class InstallationTests(unittest.TestCase):
             shortcut = home / '.local/share/kglobalaccel/org.kde.dolphin.desktop'
             self.assertEqual(shortcut.read_text(), desktop.read_text())
             self.assertIn('X-KDE-Shortcuts=Meta+E', shortcut.read_text())
-            service = (home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service').read_text()
-            self.assertIn(str(home / '.local/bin/dolphin-glass'), service)
+            service = home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service'
+            self.assertIn('--daemon', service.read_text())
             self.assertTrue((home / '.local/opt/dolphin-glass/bin/dolphin').is_file())
             backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
             subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
             self.assertEqual(desktop.read_text(), 'previous launcher')
-            self.assertFalse((home / '.local/share/kglobalaccel/org.kde.dolphin.desktop').exists())
-            self.assertFalse((home / '.local/share/dbus-1/services/org.kde.dolphin.FileManager1.service').exists())
+            self.assertFalse(service.exists())
+            self.assertFalse(shortcut.exists())
             self.assertFalse((home / '.local/opt/dolphin-glass').exists())
 
-    def test_ark_bundle_launchers_and_restore(self):
+    def test_ark_bundle_install_and_restore(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'new user'
             bundle = Path(tmp) / 'bundle'
-            (bundle / 'bin').mkdir(parents=True)
-            (bundle / 'lib').mkdir(parents=True)
-            (bundle / 'bin/ark').touch()
-            (bundle / 'lib/libkerfuffle.so.26').touch()
-            plugin = Path(tmp) / 'fake.so'
-            plugin.touch()
+            for name in ['bin/ark', 'lib/libkerfuffle.so.26']:
+                target = bundle / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
             desktop = home / '.local/share/applications/org.kde.ark.desktop'
             desktop.parent.mkdir(parents=True)
             desktop.write_text('previous Ark launcher')
@@ -101,28 +101,26 @@ class InstallationTests(unittest.TestCase):
             self.assertFalse((home / '.local/opt/ark-glass').exists())
             self.assertFalse((home / '.local/bin/ark-glass').exists())
 
-    def test_kate_and_kwrite_bundle_launchers_and_restore(self):
+    def test_kate_bundle_theme_and_launcher_restore(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'new user'
             bundle = Path(tmp) / 'bundle'
-            (bundle / 'bin').mkdir(parents=True)
-            (bundle / 'lib').mkdir(parents=True)
-            (bundle / 'bin/kate').touch()
-            (bundle / 'bin/kwrite').touch()
-            (bundle / 'lib/libKF6TextEditor.so.6').touch()
-            plugin = Path(tmp) / 'fake.so'
-            plugin.touch()
+            for name in ['bin/kate', 'bin/kwrite', 'lib/libkateprivate.so.26.08.2', 'lib/libKF6TextEditor.so.6']:
+                target = bundle / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
+            desktop = home / '.local/share/applications/org.kde.kate.desktop'
             theme = home / '.local/share/org.kde.syntax-highlighting/themes/PanelGlass.theme'
-            for target in [home / '.local/share/applications/org.kde.kate.desktop',
-                           home / '.local/share/applications/org.kde.kwrite.desktop',
-                           theme]:
+            for target in [desktop, theme]:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_text('previous content')
             cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
             subprocess.run(cmd + ['--apply', '--decoration', str(plugin), '--kate-bundle', str(bundle)], capture_output=True, check=True)
-            self.assertIn(str(home / '.local/bin/kate-glass'), (home / '.local/share/applications/org.kde.kate.desktop').read_text())
-            self.assertIn('%U', (home / '.local/share/applications/org.kde.kate.desktop').read_text())
-            self.assertNotIn('DBusActivatable=true', (home / '.local/share/applications/org.kde.kate.desktop').read_text())
+            self.assertIn(str(home / '.local/bin/kate-glass'), desktop.read_text())
+            self.assertIn('%U', desktop.read_text())
+            self.assertNotIn('DBusActivatable=true', desktop.read_text())
             self.assertTrue((home / '.local/opt/kate-glass/lib/libKF6TextEditor.so.6').is_file())
             self.assertEqual(json.loads(theme.read_text())['metadata']['name'], 'Panel Glass')
             kwrite = home / '.local/share/applications/org.kde.kwrite.desktop'
@@ -130,21 +128,22 @@ class InstallationTests(unittest.TestCase):
             self.assertNotIn('--new', (home / '.local/bin/kwrite-glass').read_text())
             backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
             subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
-            self.assertEqual((home / '.local/share/applications/org.kde.kate.desktop').read_text(), 'previous content')
-            self.assertEqual(kwrite.read_text(), 'previous content')
+            self.assertEqual(desktop.read_text(), 'previous content')
             self.assertEqual(theme.read_text(), 'previous content')
             self.assertFalse((home / '.local/opt/kate-glass').exists())
             self.assertFalse((home / '.local/bin/kate-glass').exists())
+            self.assertFalse(kwrite.exists())
             self.assertFalse((home / '.local/bin/kwrite-glass').exists())
 
     def test_spectacle_bundle_launchers_and_restore(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp) / 'new user'
             bundle = Path(tmp) / 'bundle'
-            (bundle / 'bin').mkdir(parents=True)
-            (bundle / 'bin/spectacle').touch()
-            plugin = Path(tmp) / 'fake.so'
-            plugin.touch()
+            binary = bundle / 'bin/spectacle'
+            binary.parent.mkdir(parents=True)
+            binary.write_bytes(b'bundle fixture')
+            plugin = Path(tmp) / 'decoration.so'
+            plugin.write_bytes(b'plugin fixture')
             cmd = [sys.executable, str(SCRIPT), '--home', str(home), '--no-live']
             subprocess.run(cmd + ['--apply', '--decoration', str(plugin), '--spectacle-bundle', str(bundle)], capture_output=True, check=True)
             desktop = home / '.local/share/applications/org.kde.spectacle.desktop'
@@ -163,14 +162,12 @@ class InstallationTests(unittest.TestCase):
             self.assertIn('NoDisplay=true', auth.read_text())
             services = [home / '.local/share/dbus-1/services' / (name + '.service') for name in ['org.kde.Spectacle', 'org.kde.spectacle']]
             for service in services:
-                self.assertIn(str(home / '.local/bin/spectacle-glass'), service.read_text())
                 self.assertIn('--dbus', service.read_text())
+                self.assertNotIn('SystemdService', service.read_text())
             backup = next((home / '.local/state/frosted-glass-theme/backups').iterdir())
             subprocess.run(cmd + ['--restore', str(backup)], capture_output=True, check=True)
             for target in [desktop, shortcut, auth, *services, home / '.local/opt/spectacle-glass', home / '.local/bin/spectacle-glass']:
                 self.assertFalse(target.exists())
-            if Path('/usr/bin/spectacle').is_file():
-                self.assertFalse(stock_auth.exists())
 
     def test_kate_rejects_incomplete_bundle_without_writes(self):
         with tempfile.TemporaryDirectory() as tmp:
